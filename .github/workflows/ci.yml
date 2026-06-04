@@ -1,0 +1,113 @@
+# Arasya Rentcar — main CI workflow (skeleton)
+#
+# This file is an intentionally minimal SKELETON produced by task 1.8.
+# Downstream tasks will extend it with additional steps:
+#   - task 1.7  : env validation (`scripts/validate-env.ts`)
+#   - task 3.11 : service-role key leak guard (added: `pnpm check:service-role-leak`)
+#   - task 3.12 : Supabase migration diff guard (added: `pnpm db:check-migrations`,
+#                 advisory via `continue-on-error: true` until the project is
+#                 linked with SUPABASE_ACCESS_TOKEN / SUPABASE_DB_URL /
+#                 SUPABASE_PROJECT_REF secrets)
+#   - task 6.12 : content-snapshot pre-build step
+#                 (added: `pnpm check:jsonld` post-build, continue-on-error
+#                  until Phase 5 seed + Supabase creds produce rendered HTML)
+#   - task 12.x : forbidden-phrase lint (source + rendered HTML), uniqueness,
+#                 chauffeur-only scan, non-goal leak scan, MDX frontmatter check
+#   - task 17.x : JSON-LD validity check, sitemap/robots verification
+#
+# Keep this file lightweight until those tasks land. Only the build-blocking
+# basics (install / lint / typecheck / test / build) live here today.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.31.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Owned by task 1.4 (ESLint config + `lint` script in package.json).
+      - name: Lint
+        run: pnpm lint
+
+      # `typecheck` script added by task 1.8 (this task).
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # Placeholder — real unit/component tests arrive in Phase 14 (task 14.x).
+      # Using `--if-present` so the job stays green until the script exists.
+      - name: Test
+        run: pnpm test --if-present
+
+      # Build-time transitive-import guard from task 3.11. Fails the build if
+      # `SUPABASE_SERVICE_ROLE_KEY` or the server-only Supabase factory is
+      # reachable from any Client Component (R21.8, R19.6, design §22).
+      - name: Check service-role key leak (R21.8)
+        run: pnpm check:service-role-leak
+
+      # Supabase CLI — required by the migration diff step below. Installing
+      # it once here keeps subsequent Supabase-related jobs cheap.
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Migration drift guard from task 3.12 (R21.5, R21.17). Diffs the
+      # repo's `supabase/migrations/*.sql` files against the live schema of
+      # the target Supabase project and fails when they diverge. The script
+      # self-skips (exit 0) when any of the three secrets below is absent
+      # (forks / PRs without project access), so this step is safe to run
+      # on untrusted workflows. `continue-on-error: true` keeps it advisory
+      # until the project is linked; flip to blocking once the secrets are
+      # populated and the first migration has been pushed.
+      - name: Check Supabase migrations drift (R21.5, R21.17)
+        continue-on-error: true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: pnpm db:check-migrations
+
+      - name: Build
+        run: pnpm build
+
+      # JSON-LD validity (task 6.12). Walks every *.html produced by
+      # `next build` and parses every `<script type="application/ld+json">`
+      # block (R8.7, R8.8). Non-blocking for now: until Phase 5 seed +
+      # Supabase creds are wired into this job, `next build` emits no
+      # rendered HTML and the checker would exit 0 with a "no files"
+      # notice anyway. `continue-on-error: true` is retained so that any
+      # future failure mode during the scaffolding period cannot mask
+      # legitimate build breaks. Flip to blocking (remove
+      # `continue-on-error`) once the seed + env are in place.
+      - name: JSON-LD validity (task 6.12)
+        continue-on-error: true
+        run: pnpm check:jsonld

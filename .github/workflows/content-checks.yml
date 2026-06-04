@@ -1,0 +1,72 @@
+# Arasya Rentcar — content-checks workflow (skeleton)
+#
+# Runs on pull requests that touch content, migrations, or i18n strings.
+# Each step below is an intentional PLACEHOLDER — it will be wired up by the
+# downstream task noted in its `name`. Today every step just echoes its TODO
+# and exits 0 so the workflow is green until those tasks ship.
+
+name: Content Checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "content/**"
+      - "supabase/migrations/**"
+      - "lib/i18n/**"
+
+concurrency:
+  group: content-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  content:
+    name: Content integrity checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.31.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Wired by task 12.5 — MDX frontmatter zod validation.
+      - name: MDX frontmatter validation (task 12.5)
+        run: pnpm check:mdx
+
+      # Wired by task 12.1 — R20 forbidden-phrase lint on MDX + i18n sources.
+      - name: Forbidden-phrase lint — sources (task 12.1)
+        run: echo "TODO: wired by task 12.1 (forbidden-phrase lint on sources)"
+
+      # Wired by task 12.2 — R6 uniqueness / token-overlap analyzer.
+      - name: Uniqueness check (task 12.2)
+        run: echo "TODO: wired by task 12.2 (uniqueness / token-overlap analyzer)"
+
+      # Wired by task 12.3 — chauffeur-only brand boundary scan (structured data).
+      - name: Chauffeur-only check — structured (task 12.3)
+        run: echo "TODO: wired by task 12.3 (chauffeur-only structured scan)"
+
+      # Wired by task 12.6 — chauffeur-only brand boundary scan (MDX + i18n).
+      - name: Chauffeur-only check — narrative (task 12.6)
+        run: echo "TODO: wired by task 12.6 (chauffeur-only narrative scan)"
+
+      # Wired by task 12.7 — non-goal leak scan (self-drive / rent-to-own / etc.).
+      - name: Non-goal leak scan (task 12.7)
+        run: echo "TODO: wired by task 12.7 (non-goal leak scan)"
+
+      # Wired by task 3.12 — Supabase migration diff / ordering guard.
+      - name: Migration diff guard (task 3.12)
+        run: echo "TODO: wired by task 3.12 (Supabase migration diff guard)"

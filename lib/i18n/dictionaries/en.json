@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "siteName": "Arasya Rentcar",
+    "tagline": "Chauffeur car rental for every journey you plan",
+    "whatsappAriaLabel": "Contact the Arasya Rentcar admin on WhatsApp",
+    "skipLinkLabel": "Skip to main content"
+  },
+  "nav": {
+    "home": "Home",
+    "fleet": "Fleet",
+    "services": "Services",
+    "cities": "Cities",
+    "international": "International",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "footer": {
+    "about": "Arasya Rentcar delivers chauffeur car rental with professional drivers for business trips, family travel, and airport transfers across Indonesia.",
+    "links": {
+      "faq": "FAQ",
+      "terms": "Terms",
+      "privacy": "Privacy"
+    },
+    "antiFraudNotice": "Arasya Rentcar bookings are confirmed only via the single official admin WhatsApp number shown on this website. Any other number claiming to be Arasya Rentcar is not our official channel. Always verify with the official admin before transferring funds to any personal account.",
+    "adminWhatsappLabel": "Official Admin WhatsApp",
+    "copyright": "© {year} Arasya Rentcar."
+  },
+  "cta": {
+    "primaryBooking": "Book Now",
+    "secondaryWhatsapp": "Chat on WhatsApp",
+    "bookNow": "Book Now",
+    "chatNow": "Chat Now"
+  },
+  "home": {
+    "hero": {
+      "headline": "Trusted chauffeur car rental with professional drivers",
+      "subheadline": "Business trips, family holidays, and airport transfers feel effortless with experienced chauffeurs and a maintained fleet from Arasya Rentcar."
+    },
+    "trustSignals": [
+      {
+        "heading": "Experienced Professional Chauffeurs",
+        "description": "Every chauffeur passes strict screening, ongoing training, and knows major city routes and guest service etiquette by heart."
+      },
+      {
+        "heading": "Verified Rental Vehicles",
+        "description": "Each car is routinely inspected, actively insured, and prepared for short city trips as well as longer intercity journeys."
+      },
+      {
+        "heading": "Transparent Pricing Upfront",
+        "description": "Quoted rates already include the chauffeur, basic fuel, and a clear breakdown from the start with no hidden charges."
+      },
+      {
+        "heading": "Direct WhatsApp Support",
+        "description": "The official Arasya Rentcar admin is ready to assist bookings, schedule changes, and service questions on WhatsApp with fast responses."
+      }
+    ]
+  },
+  "common": {
+    "whatsapp": "WhatsApp",
+    "phone": "Phone",
+    "email": "Email",
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "chauffeurOnlyPhrase": "chauffeur car rental"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "Sorry, the page you were looking for is unavailable. Try one of the cities below.",
+    "citiesHeading": "Cities we serve",
+    "citiesNavLabel": "Available cities",
+    "backHome": "Back to home"
+  }
+}

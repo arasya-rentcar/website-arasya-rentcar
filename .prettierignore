@@ -1,0 +1,25 @@
+# Build and cache output
+.next/
+out/
+dist/
+build/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Lockfiles (managed by pnpm)
+pnpm-lock.yaml
+
+# Minified assets
+*.min.*
+
+# Generated types / Next artifacts
+next-env.d.ts
+
+# Supabase local temp artifacts (if present)
+supabase/.temp/
+supabase/.branches/
+
+# Misc
+.vercel/

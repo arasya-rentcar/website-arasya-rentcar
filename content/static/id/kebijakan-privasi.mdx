@@ -1,0 +1,59 @@
+---
+slug: kebijakan-privasi
+locale: id
+chauffeurOnly: true
+title: Kebijakan Privasi
+updatedAt: 2025-12-15
+---
+
+## Data yang dikumpulkan
+
+Arasya Rentcar mengumpulkan data minimum yang dibutuhkan untuk memproses
+permintaan reservasi:
+
+- Nama lengkap dan nomor WhatsApp dari formulir pemesanan
+- Detail perjalanan (kota dan lokasi penjemputan, tanggal, jam, durasi, jumlah
+  penumpang)
+- Catatan opsional yang Anda tulis sendiri di formulir
+- Hash anonim dari alamat IP untuk pembatasan laju permintaan (rate limit)
+
+Kami tidak mengumpulkan data identitas pemerintah, dokumen perjalanan, atau
+informasi pembayaran melalui situs ini.
+
+## Tujuan pemrosesan
+
+- Memproses dan mengonfirmasi reservasi Anda via WhatsApp admin resmi
+- Mencegah penyalahgunaan formulir lewat hash IP yang disimpan sementara
+- Mengukur ketertarikan halaman secara agregat (analitik privat tanpa cookie
+  pelacak), hanya jika Anda memberikan persetujuan eksplisit
+
+## Retensi data
+
+- Data reservasi disimpan paling lama 180 hari, kemudian dihapus atau
+  dianonimkan secara otomatis
+- Hash IP untuk rate-limit disimpan paling lama 24 jam
+- Persetujuan analitik disimpan di localStorage perangkat Anda; Anda dapat
+  menghapusnya kapan saja melalui pengaturan browser
+
+## Pihak ketiga yang menerima data
+
+- **Supabase** sebagai penyedia basis data terkelola untuk menyimpan
+  reservasi dan hash rate-limit
+- **Plausible** sebagai analitik halaman, hanya saat Anda memberikan
+  persetujuan
+- **WhatsApp** saat Anda menekan tautan `wa.me` di situs ini, sehingga sesi
+  chat dimulai langsung di aplikasi WhatsApp
+
+Kami tidak menjual atau menyewakan data Anda kepada pihak ketiga.
+
+## Permintaan akses dan penghapusan
+
+Anda berhak meminta akses, koreksi, atau penghapusan data reservasi yang
+masih kami simpan. Kirim permintaan tersebut ke nomor WhatsApp admin resmi
+yang tertera di situs ini dengan menyebutkan nama dan nomor WhatsApp yang
+digunakan saat memesan. Kami akan memproses permintaan dalam tujuh hari kerja.
+
+## Cookie
+
+Situs ini tidak menggunakan cookie pelacak pihak ketiga. Banner persetujuan
+analitik menyimpan keputusan Anda di localStorage perangkat selama satu tahun.
