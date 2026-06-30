@@ -52,13 +52,8 @@ type Locale = "id" | "en";
  * - `Permissions-Policy`: denies camera/microphone/geolocation/
  *   browsing-topics, none of which the website uses.
  */
-const SECURITY_HEADERS: Readonly<Record<string, string>> = Object.freeze({
-  "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
-  "x-content-type-options": "nosniff",
-  "referrer-policy": "strict-origin-when-cross-origin",
-  "permissions-policy":
-    "camera=(), microphone=(), geolocation=(), browsing-topics=()",
-  "content-security-policy": [
+function buildSecurityHeaders(httpsRequest: boolean): Readonly<Record<string, string>> {
+  const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://plausible.io https://*.crisp.chat https://embed.tawk.to",
     "style-src 'self' 'unsafe-inline'",
@@ -69,16 +64,36 @@ const SECURITY_HEADERS: Readonly<Record<string, string>> = Object.freeze({
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "upgrade-insecure-requests",
-  ].join("; "),
-});
+  ];
+  // `upgrade-insecure-requests` only on HTTPS (prod/edge); skip on HTTP (local dev)
+  // so CSS and other subresources can load over plain HTTP.
+  if (httpsRequest) {
+    csp.push("upgrade-insecure-requests");
+  }
+
+  return Object.freeze({
+    "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy":
+      "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+    "content-security-policy": csp.join("; "),
+  });
+}
 
 /**
  * Mutate `response.headers` in place with the baseline security headers.
  * The response object is returned for ergonomic chaining.
  */
-function applySecurityHeaders(response: NextResponse): NextResponse {
-  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+/** Detect HTTPS from the request URL (true for prod/edge, false for HTTP dev). */
+function isHttpsRequest(request: NextRequest): boolean {
+  const proto = request.headers.get("x-forwarded-proto") || request.nextUrl.protocol;
+  return proto === "https";
+}
+
+function applySecurityHeaders(response: NextResponse, httpsRequest: boolean): NextResponse {
+  const headers = buildSecurityHeaders(httpsRequest);
+  for (const [key, value] of Object.entries(headers)) {
     response.headers.set(key, value);
   }
   return response;
@@ -141,6 +156,8 @@ function getLocaleFromPath(pathname: string): Locale {
 }
 
 export function middleware(request: NextRequest) {
+  const https = isHttpsRequest(request);
+
   // R3.7: redirect any non-canonical URL form to its canonical equivalent
   // before doing anything else. This runs ahead of locale detection so a
   // request like `/EN/CAR-RENTAL/` hits the 301 once and lands on
@@ -150,7 +167,7 @@ export function middleware(request: NextRequest) {
   if (canonicalPath !== null) {
     const url = request.nextUrl.clone();
     url.pathname = canonicalPath;
-    return applySecurityHeaders(NextResponse.redirect(url, 301));
+    return applySecurityHeaders(NextResponse.redirect(url, 301), https);
   }
 
   const pathname = request.nextUrl.pathname;
@@ -183,7 +200,7 @@ export function middleware(request: NextRequest) {
         headers: requestHeaders,
       },
     });
-    return applySecurityHeaders(response);
+    return applySecurityHeaders(response, https);
   }
 
   const response = NextResponse.next({
@@ -192,7 +209,7 @@ export function middleware(request: NextRequest) {
     },
   });
 
-  return applySecurityHeaders(response);
+  return applySecurityHeaders(response, https);
 }
 
 /**
