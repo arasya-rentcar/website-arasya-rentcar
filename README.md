@@ -363,8 +363,13 @@ reviews collected on a third-party site, and it can draw a manual action.
 
 ## Reference
 
-- `arasya-handoff/design_handoff_arasya_pseo/README.md` — handoff brief
-- `arasya-handoff/design_handoff_arasya_pseo/PSEO-HANDOFF.md` — full SEO/engineering spec
+- [`docs/handoff-brief.md`](docs/handoff-brief.md) — the design brief
+- [`docs/pseo-spec.md`](docs/pseo-spec.md) — full SEO / engineering specification
+
+Both are copies of the handoff's spec documents, kept here because they are documentation
+rather than design artefacts: they state the editorial rules, the JSON-LD requirements and
+the internal-link structure this codebase implements, and `verify:content` enforces several
+of them mechanically. They are the reason a given decision was made.
 
 ### The design handoff is not in this repository
 
@@ -378,10 +383,15 @@ handoff is absent. The fallback is verified rather than assumed: with the folder
 `npm run db:seed` rebuilds the database and `npm run db:verify` still deep-equals it
 against the original registries.
 
+The two spec documents were kept, as `docs/` above — they are documentation and belong with
+the code. What is gone is the design output: the `.dc.html` prototypes, the design-system
+bundle, and photos duplicated from `public/assets/`.
+
 Two consequences worth knowing:
 
 - **Keep a copy of the handoff outside the repo.** The `.dc.html` prototypes are the stated
-  pixel reference, cited below to settle two disagreements with the prose spec.
+  pixel reference, cited above to settle two disagreements with the prose spec. Nothing
+  breaks without them, but if a layout decision is ever questioned they are the evidence.
 - **`verify:mapping` weakens.** With the handoff it proves fidelity to the signed-off
   design; from the snapshot it can only prove the row mapping round-trips. That check has
   served its purpose — the migration is done and verified.
