@@ -109,7 +109,34 @@ await send('Runtime.enable', {}, sessionId);
 const probeFor = (touch) => `(() => {
   const TOUCH = ${touch};
   const vw = document.documentElement.clientWidth;
-  const out = { vw, overflowX: document.documentElement.scrollWidth - vw, culprits: [], ratios: [], taps: [], clipped: [] };
+  const out = { vw, overflowX: document.documentElement.scrollWidth - vw, culprits: [], ratios: [], taps: [], clipped: [], order: null };
+
+  // Document order. These pages lay their sections out with flex \`order\`, which
+  // silently reshuffles them if one sibling forgets to set it — the header shipped
+  // at the BOTTOM of /, /en and /travel that way, because those screens compose
+  // sections inline with the default order:0 while the header asked for 10.
+  // Nothing else here would catch that: no overflow, correct ratios, every link
+  // still clickable.
+  {
+    const header = document.querySelector('header');
+    const footer = document.querySelector('footer');
+    const main = document.querySelector('section, main');
+    if (header) {
+      const h = header.getBoundingClientRect().top + window.scrollY;
+      const firstSection = [...document.querySelectorAll('section')]
+        .map((s) => s.getBoundingClientRect().top + window.scrollY)
+        .sort((a, b) => a - b)[0];
+      const f = footer ? footer.getBoundingClientRect().top + window.scrollY : Infinity;
+      out.order = {
+        headerTop: Math.round(h),
+        firstSectionTop: firstSection === undefined ? null : Math.round(firstSection),
+        footerTop: f === Infinity ? null : Math.round(f),
+        headerFirst: firstSection === undefined ? true : h <= firstSection,
+        footerLast: f === Infinity ? true : f >= (firstSection ?? 0),
+      };
+    }
+    void main;
+  }
 
   if (out.overflowX > 0) {
     for (const el of document.querySelectorAll('body *')) {
@@ -167,12 +194,21 @@ const probeFor = (touch) => `(() => {
       if (r.height >= 44) continue;
       // Nearest interactive neighbour that overlaps horizontally.
       let gap = Infinity;
+      let near = null;
       for (const o of cands) {
         if (o.el === el) continue;
+        // Fixed elements (the WhatsApp FAB) float over whatever happens to be
+        // beneath them as the page scrolls. They are not layout neighbours, and
+        // counting them turns "this link is in a dense stack" into a false
+        // positive that changes with scroll position.
+        if (getComputedStyle(o.el).position === 'fixed') continue;
         const overlapsX = o.r.right > r.left + 1 && o.r.left < r.right - 1;
         if (!overlapsX) continue;
         const d = o.r.top >= r.bottom ? o.r.top - r.bottom : r.top >= o.r.bottom ? r.top - o.r.bottom : 0;
-        if (d < gap) gap = d;
+        if (d < gap) {
+          gap = d;
+          near = (o.el.getAttribute('aria-label') || (o.el.textContent || '').trim() || o.el.tagName).slice(0, 28);
+        }
       }
       // Half-pixel tolerance: sub-pixel layout makes an exactly-44px target
       // measure 43.98 and report as a failure at 44px.
@@ -193,6 +229,7 @@ const probeFor = (touch) => `(() => {
         w: Math.round(r.width),
         gap: gap === Infinity ? '∞' : Math.round(gap),
         eff: Math.round(effective),
+        near: near ?? '(isolated)',
       });
     }
     const seen = new Set();
@@ -268,16 +305,24 @@ for (const dev of DEVICES) {
     if (o.ratios.length) issues.push(`${o.ratios.length} image ratio`);
     if (o.taps.length) issues.push(`${o.taps.length} small tap target`);
     if (o.clipped.length) issues.push(`${o.clipped.length} clipped text`);
+    if (o.order && !o.order.headerFirst) issues.push('HEADER NOT AT TOP');
+    if (o.order && !o.order.footerLast) issues.push('FOOTER NOT AT BOTTOM');
 
     const label = page.padEnd(34);
     if (issues.length) {
       problems++;
       summary.push(`${dev.name} ${page}: ${issues.join(', ')}`);
       console.log(`  ✗ ${label} ${issues.join(', ')}`);
+      if (o.order && (!o.order.headerFirst || !o.order.footerLast))
+        console.log(
+          `       order: header@${o.order.headerTop} firstSection@${o.order.firstSectionTop} footer@${o.order.footerTop}`
+        );
       for (const c of o.culprits) console.log(`       overflow: <${c.tag} class="${c.cls}"> right=${c.right} vw=${o.vw} "${c.txt}"`);
       for (const r of o.ratios) console.log(`       ratio: "${r.alt}" want ${r.want} got ${r.got} (${r.w}×${r.h})`);
       for (const t of o.taps)
-        console.log(`       tap: <${t.tag}> ${t.w}×${t.h}px, gap ${t.gap} → effective ${t.eff}px  "${t.txt}"`);
+        console.log(
+          `       tap: <${t.tag}> ${t.w}×${t.h}px, gap ${t.gap} to "${t.near}" → effective ${t.eff}px  "${t.txt}"`
+        );
       for (const c of o.clipped) console.log(`       clipped: <${c.tag}> ${c.sw}>${c.cw} "${c.txt}"`);
 
       const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true }, sessionId);

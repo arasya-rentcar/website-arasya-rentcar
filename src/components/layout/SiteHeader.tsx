@@ -60,7 +60,18 @@ export function SiteHeader({
     <header
       data-screen-label="Header"
       style={{
-        order: 10,
+        // The header is chrome, not part of the section-ordering scheme, so it
+        // sits below every possible section order rather than at the bottom of
+        // the numbered range.
+        //
+        // It used to be `order: 10`, which only worked while every sibling set a
+        // HIGHER order. The landing templates do (hero 20, trust 30 … footer
+        // 120) but Home and Travel compose their sections inline, so those
+        // defaulted to `order: 0` and sorted ahead of the header — putting the
+        // navbar at the very bottom of the page, just above the footer, on / ,
+        // /en and /travel. A negative order removes the dependency on what any
+        // sibling chooses.
+        order: -1,
         position: 'sticky',
         top: 0,
         zIndex: 30,
