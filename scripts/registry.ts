@@ -7,7 +7,7 @@
  * pristine `*Base` exports are what we read. Importing the real files (rather
  * than re-typing the data) is what makes the seed provably lossless.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type {
   Destination,
@@ -76,6 +76,14 @@ interface RawCity {
   faqExtra: Location['faqExtra'];
   trust?: TrustCard[];
   cityDirectory?: DirectoryEntry[];
+  /**
+   * Absent from the handoff registries; present when loading from the snapshot,
+   * which is exported from the database and therefore carries whatever the CMS
+   * has filled in. Preserved on re-seed rather than reset — see cityToRow.
+   */
+  slugEn?: string;
+  en?: Location['en'];
+  waPhone?: string;
 }
 
 interface RawPost {
@@ -98,21 +106,71 @@ interface RawPost {
   excerpt: string;
   sections: Post['sections'];
   related: string[];
+  /** Snapshot-only, preserved on re-seed. See RawCity. */
+  slugEn?: string;
+  en?: Post['en'];
 }
 
 /* ----------------------------------------------------------------- loaders */
 
+/**
+ * The handoff is no longer committed — it was ~5.7 MB of design artefacts whose
+ * job ended once the content reached Supabase. `src/data/registry-snapshot.json`
+ * is committed instead, and these loaders fall back to it so the repo can still
+ * rebuild the database from scratch without it.
+ *
+ * The fallback is lossless because the snapshot is exported from the database,
+ * which `db:verify` deep-equals against the registries. The seed's transforms
+ * are all idempotent — `normalizeAssetPath` on an already-normalised path,
+ * `withDestinationMedia` on already-merged destinations, and the overseas trust
+ * default on entries that already carry it — so re-seeding from the snapshot
+ * produces byte-identical rows.
+ *
+ * One guarantee is genuinely weaker: with the handoff present, `verify:mapping`
+ * proves fidelity to the signed-off design. Reading the snapshot it can only
+ * prove the row mapping round-trips. That check has already served its purpose
+ * (the migration is done and verified), and Supabase is the source of truth now.
+ */
+const HAS_HANDOFF = existsSync(HANDOFF);
+
+interface SnapshotShape {
+  locations: (RawCity & { key: string })[];
+  posts: (RawPost & { key: string })[];
+  site: Site;
+  travel: Omit<Travel, 'updatedAt'>;
+}
+
+let snapshotCache: SnapshotShape | null = null;
+function snapshot(): SnapshotShape {
+  if (!snapshotCache) {
+    const p = resolve(process.cwd(), 'src/data/registry-snapshot.json');
+    if (!existsSync(p)) {
+      throw new Error(
+        `Neither arasya-handoff/ nor ${p} is present — there is no content to seed from.`
+      );
+    }
+    snapshotCache = JSON.parse(readFileSync(p, 'utf8')) as SnapshotShape;
+  }
+  return snapshotCache;
+}
+
+const byKey = <T extends { key: string }>(rows: T[]): Record<string, T> =>
+  Object.fromEntries(rows.map((r) => [r.key, r]));
+
 export async function loadCities(): Promise<Record<string, RawCity>> {
+  if (!HAS_HANDOFF) return byKey(snapshot().locations);
   const m = await importRegistry<{ citiesBase: Record<string, RawCity> }>('city-landing/cities.js');
   return m.citiesBase;
 }
 
 export async function loadPosts(): Promise<Record<string, RawPost>> {
+  if (!HAS_HANDOFF) return byKey(snapshot().posts);
   const m = await importRegistry<{ postsBase: Record<string, RawPost> }>('blog-post/posts.js');
   return m.postsBase;
 }
 
 export async function loadSite(): Promise<Omit<Site, 'gallery' | 'en' | 'updatedAt'>> {
+  if (!HAS_HANDOFF) return snapshot().site;
   const m = await importRegistry<{ siteBase: Omit<Site, 'gallery' | 'en' | 'updatedAt'> }>(
     'city-landing/site.js'
   );
@@ -120,6 +178,7 @@ export async function loadSite(): Promise<Omit<Site, 'gallery' | 'en' | 'updated
 }
 
 export async function loadTravel(): Promise<Omit<Travel, 'updatedAt'>> {
+  if (!HAS_HANDOFF) return snapshot().travel;
   const m = await importRegistry<{ travelBase: Omit<Travel, 'updatedAt'> }>('city-landing/travel.js');
   return m.travelBase;
 }
@@ -136,6 +195,7 @@ interface I18nModule {
  * files (src/lib/i18n.ts), not the CMS-editable database.
  */
 export async function loadI18nOverlays(): Promise<SiteTranslation> {
+  if (!HAS_HANDOFF) return snapshot().site.en ?? {};
   const m = await importRegistry<I18nModule>('city-landing/i18n.js');
   return {
     services: m.SERVICES_EN,
@@ -316,17 +376,22 @@ export function cityToRow(key: string, c: RawCity, sortOrder: number) {
   return {
     key,
     slug: c.slug,
-    // No EN copy exists for landing templates yet — i18n.js only carries home
-    // strings. Entries join /en/ once these are filled via the CMS language tab.
-    slug_en: null,
-    en: null,
+    // The handoff carries no EN copy for landing templates — i18n.js only has
+    // home strings — so these are normally null. They are read from the input
+    // rather than hardcoded because the snapshot fallback re-seeds from content
+    // that HAS been translated: hardcoding null here would silently wipe every
+    // translation the CMS had filled in. Same reasoning for wa_phone below.
+    slug_en: c.slugEn ?? null,
+    en: c.en ?? null,
     name: c.name,
     code: c.code,
     page_type: c.pageType,
     template: c.template,
     variant: c.variant,
     country: c.country,
-    wa_phone: WA_ROUTING[key] ?? null,
+    // WA_ROUTING is the seed-time assignment; `c.waPhone` preserves routing
+    // already set through the CMS when re-seeding from a snapshot.
+    wa_phone: WA_ROUTING[key] ?? c.waPhone ?? null,
     hero_image: normalizeAssetPath(c.heroImage) ?? null,
     h1: c.h1,
     hero_subtitle: c.heroSubtitle,
@@ -364,8 +429,10 @@ export function postToRow(key: string, p: RawPost, sortOrder: number) {
   return {
     key,
     slug: p.slug,
-    slug_en: null,
-    en: null,
+    // Read from the input, not hardcoded — see cityToRow: a snapshot re-seed
+    // must not wipe translations the CMS has filled in.
+    slug_en: p.slugEn ?? null,
+    en: p.en ?? null,
     title: p.title,
     category: p.category,
     city_key: p.cityKey,

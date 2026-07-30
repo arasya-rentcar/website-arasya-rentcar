@@ -49,23 +49,19 @@ yarn-error.log*
 
 # ---------------------------------------------------------------- design handoff
 #
-# The handoff is NOT excluded wholesale, because part of it is load-bearing:
-# `scripts/registry.ts` imports the registry .js files, so `npm run db:seed`,
-# `verify:mapping` and `snapshot` all stop working without them. What is excluded
-# is the ~4.4 MB of binaries, every one of which is a duplicate or already
-# vendored:
+# The source design project (~5.7 MB of prototypes, registries and duplicated
+# photos). Its job ended when the content reached Supabase, which is now the
+# source of truth.
 #
-#   *.webp     the same photos that /public/assets serves. The registries only
-#              rewrite these paths as strings — nothing reads the handoff copies,
-#              and verify:mapping resolves every asset against /public.
-#   *.woff2    fonts, already in /public/assets/fonts.
-#   .thumbnail design-tool artifacts.
+# Nothing in the build ever read it — tsconfig excludes it, ESLint ignores it,
+# and app/ and src/ never import from it. Only `scripts/registry.ts` did, for
+# seeding, and those loaders now fall back to `src/data/registry-snapshot.json`
+# when the folder is absent. That fallback is verified, not assumed: with the
+# handoff removed, `db:seed` rebuilds the database and `db:verify` still
+# deep-equals it against the original registries.
 #
-# What stays is ~1.3 MB of text: the four registries (content provenance), the
-# .dc.html prototypes (the stated pixel reference — the README cites them to
-# settle two disagreements with the prose spec), the _ds bundle source that
-# src/design-system was ported from, and the two spec documents.
-arasya-handoff/**/*.webp
-arasya-handoff/**/*.woff2
-arasya-handoff/**/.thumbnail/
-arasya-handoff/**/*.thumbnail
+# Keep a copy outside the repo. One guarantee weakens without it — `verify:mapping`
+# drops from "proves fidelity to the signed-off design" to "proves the row mapping
+# round-trips" — and the .dc.html prototypes are the stated pixel reference if a
+# layout decision is ever questioned.
+/arasya-handoff

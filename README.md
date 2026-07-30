@@ -366,12 +366,27 @@ reviews collected on a third-party site, and it can draw a manual action.
 - `arasya-handoff/design_handoff_arasya_pseo/README.md` — handoff brief
 - `arasya-handoff/design_handoff_arasya_pseo/PSEO-HANDOFF.md` — full SEO/engineering spec
 
-The handoff folder is committed **without its binaries**: the ~4.4 MB of `.webp` and
-`.woff2` files there duplicate what `public/assets/` already serves, and nothing reads
-them — the registries only rewrite those paths as strings, and `verify:mapping` resolves
-every asset against `/public`. The registry `.js` files, the `.dc.html` prototypes and the
-spec documents are kept, because `scripts/registry.ts` imports the registries and the
-prototypes are the stated pixel reference.
+### The design handoff is not in this repository
 
-The earlier static Bogor preview (`design/preview/`) is untracked — superseded by the real
-`/sewa-mobil-bogor` page and referenced by nothing in the build.
+`arasya-handoff/` and the earlier `design/preview/` are untracked. Supabase is the source
+of truth for content now, and nothing in the build ever read either: `tsconfig` excludes
+them, ESLint ignores them, and `app/` and `src/` never import from them.
+
+Only `scripts/registry.ts` did, for seeding. Those loaders now fall back to
+`src/data/registry-snapshot.json` — committed, and exported from the database — when the
+handoff is absent. The fallback is verified rather than assumed: with the folder removed,
+`npm run db:seed` rebuilds the database and `npm run db:verify` still deep-equals it
+against the original registries.
+
+Two consequences worth knowing:
+
+- **Keep a copy of the handoff outside the repo.** The `.dc.html` prototypes are the stated
+  pixel reference, cited below to settle two disagreements with the prose spec.
+- **`verify:mapping` weakens.** With the handoff it proves fidelity to the signed-off
+  design; from the snapshot it can only prove the row mapping round-trips. That check has
+  served its purpose — the migration is done and verified.
+
+Because a snapshot re-seed writes content the CMS may have edited, `cityToRow` and
+`postToRow` read `slugEn`, `en` and `waPhone` from their input instead of hardcoding null.
+Hardcoding would silently wipe every translation and per-page WhatsApp routing on the next
+seed.

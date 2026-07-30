@@ -77,7 +77,10 @@ for (const [k, raw] of Object.entries(cities)) {
   // merges in photos sourced after the handoff, and gives overseas entries the
   // quote-based trust cards instead of the domestic defaults. All three are
   // intended transforms, so apply them to the expectation too.
-  const expected: Record<string, unknown> = { ...raw };
+  // Stripped on both sides. With the handoff present these fields are absent
+  // from `raw` and this is a no-op; loading from the snapshot they are present,
+  // because the snapshot is exported from the database.
+  const expected: Record<string, unknown> = stripDbFields({ ...raw } as Record<string, unknown>);
   if (raw.heroImage) expected.heroImage = normalizeAssetPath(raw.heroImage);
   const media = DESTINATION_MEDIA[k] ?? {};
   expected.destinations = (raw.destinations ?? []).map((d) => {
@@ -101,8 +104,11 @@ for (const [k, raw] of Object.entries(posts)) {
   const actual = stripDbFields(toPost(row) as unknown as Record<string, unknown>);
 
   // cityPreviewHref pointed at a .dc.html preview file — deliberately dropped.
-  const { cityPreviewHref, ...expected } = raw;
+  const { cityPreviewHref, ...rest } = raw;
   void cityPreviewHref;
+  // Same strip as locations: no-op against the handoff, required against the
+  // snapshot, which carries the database-owned fields.
+  const expected = stripDbFields(rest as unknown as Record<string, unknown>);
 
   check(k, expected, actual);
 }
@@ -123,10 +129,15 @@ const enOverlays = await loadI18nOverlays();
   // Testimonials are deliberately NOT the registry's: `site.js` ships
   // placeholder reviews with invented names, replaced by REAL_TESTIMONIALS.
   check('testimonials are the real reviews', REAL_TESTIMONIALS, site.testimonials);
+  // Named explicitly rather than derived from `registrySite`: when the loaders
+  // fall back to the snapshot, `registrySite` IS the live content, so deriving
+  // the placeholder list from it would compare the real reviews against
+  // themselves and fail every one. These three names are what site.js shipped.
+  const HANDOFF_PLACEHOLDER_REVIEWERS = ['Rina W.', 'Budi S.', 'Maya A.'];
   check(
     'no placeholder testimonial survives',
     [],
-    site.testimonials.filter((t) => registrySite.testimonials.some((p) => p.name === t.name))
+    site.testimonials.filter((t) => HANDOFF_PLACEHOLDER_REVIEWERS.includes(t.name))
   );
   // Every displayed review must be verifiable — the card links to its source.
   check(
