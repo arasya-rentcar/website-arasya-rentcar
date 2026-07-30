@@ -365,4 +365,13 @@ reviews collected on a third-party site, and it can draw a manual action.
 
 - `arasya-handoff/design_handoff_arasya_pseo/README.md` — handoff brief
 - `arasya-handoff/design_handoff_arasya_pseo/PSEO-HANDOFF.md` — full SEO/engineering spec
-- `design/preview/` — earlier static Bogor preview, kept for reference
+
+The handoff folder is committed **without its binaries**: the ~4.4 MB of `.webp` and
+`.woff2` files there duplicate what `public/assets/` already serves, and nothing reads
+them — the registries only rewrite those paths as strings, and `verify:mapping` resolves
+every asset against `/public`. The registry `.js` files, the `.dc.html` prototypes and the
+spec documents are kept, because `scripts/registry.ts` imports the registries and the
+prototypes are the stated pixel reference.
+
+The earlier static Bogor preview (`design/preview/`) is untracked — superseded by the real
+`/sewa-mobil-bogor` page and referenced by nothing in the build.
