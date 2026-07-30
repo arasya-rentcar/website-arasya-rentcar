@@ -1,0 +1,42 @@
+{
+  "name": "arasya-rentcar-website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:seed": "tsx scripts/seed.mts",
+    "db:verify": "tsx scripts/verify-seed.mts",
+    "verify:mapping": "tsx scripts/verify-mapping.mts",
+    "snapshot": "tsx scripts/export-snapshot.mts",
+    "verify:seo": "tsx scripts/verify-seo.mts",
+    "verify:rls": "tsx scripts/verify-rls.mts",
+    "verify:content": "tsx scripts/verify-content.mts",
+    "qa:devices": "node scripts/qa-devices.mjs",
+    "qa:interactions": "node scripts/qa-interactions.mjs",
+    "verify:routes": "tsx scripts/verify-routes.mts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.58.0",
+    "gsap": "^3.13.0",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@types/node": "^22.18.1",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "dotenv": "^17.2.2",
+    "eslint": "^9.36.0",
+    "eslint-config-next": "^15.5.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

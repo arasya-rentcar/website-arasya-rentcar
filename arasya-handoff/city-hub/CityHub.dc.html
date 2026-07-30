@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Hub Kota Layanan (pSEO)" description="Halaman hub /sewa-mobil — direktori seluruh halaman kota/wilayah/negara dari cities.js dengan filter Indonesia/Luar Negeri, trust strip, CTA WhatsApp, dan ItemList JSON-LD. Simpul internal-linking wajib pSEO." -->
+<helmet>
+  <script src="./ds-base.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <title>Sewa Mobil dengan Supir — Kota Layanan Arasya Rent Car</title>
+  <meta name="description" content="Direktori kota layanan Arasya Rent Car: sewa mobil premium dengan supir di Bogor, Yogyakarta, Bali, hingga Bangkok. Tarif transparan, pesan via WhatsApp."/>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: #f5f7fa; }
+    a:not([class]) { color: var(--ar-color-primary); text-decoration: none; }
+    a:not([class]):hover { color: var(--ar-color-primary-hover); text-decoration: underline; }
+    :root { --ar-color-bg: #f5f7fa; --city-cta: #d9511c; --city-cta-hover: #bc4315; --city-navy-2: #06213f; --city-sky: #93c5f6; }
+    .site-nav-links { display: flex; align-items: center; gap: clamp(10px, 2vw, 22px); }
+    .site-nav-burger { position: relative; display: none; }
+    .site-nav-burger summary { list-style: none; }
+    .site-nav-burger summary::-webkit-details-marker { display: none; }
+    @media (max-width: 767px) { .site-nav-links { display: none; } .site-nav-burger { display: block; } }
+  </style>
+</helmet>
+<x-import component-from-global-scope="ArasyaDS.ArasyaProvider" hint-size="100%,4000px">
+  <div style="min-height: 100vh; background: var(--ar-color-bg); display: flex; flex-direction: column;">
+
+    <header data-screen-label="Header" style="position: sticky; top: 0; z-index: 30; background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--ar-color-border);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: 10px clamp(20px, 4vw, 32px); display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <a href="/" onClick="{{ onOpenHome }}" aria-label="Beranda Arasya Rent Car" style="display: inline-flex; align-items: center;"><img src="../city-landing/assets/brand/logo-arasya.webp" alt="Arasya Rent Car" style="height: clamp(26px, 6vw, 32px); width: auto; display: block;"/></a>
+        <nav style="display: flex; align-items: center; gap: clamp(10px, 2.4vw, 14px);">
+          <div class="site-nav-links">
+            <a href="/" onClick="{{ onOpenHome }}" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">Beranda</a>
+            <a href="#kota" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">Kota Layanan</a>
+            <a href="/travel" onClick="{{ onOpenTravel }}" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">Travel</a>
+            <a href="/blog" onClick="{{ onOpenBlog }}" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">Blog</a>
+          </div>
+          <a href="{{ waNav }}" target="_blank" rel="noopener noreferrer" data-cta="hub-nav-wa" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 clamp(12px, 2.4vw, 18px); border-radius: var(--ar-radius-md); background: var(--city-cta); color: #ffffff; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); text-decoration: none; white-space: nowrap; transition: background var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--city-cta-hover);">Pesan Sekarang</a>
+          <details class="site-nav-burger">
+            <summary aria-label="Buka menu navigasi" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-md); background: #ffffff; cursor: pointer;">
+              <span style="display: flex; flex-direction: column; gap: 4px;"><span style="width: 18px; height: 2px; border-radius: 2px; background: var(--ar-color-text);"></span><span style="width: 18px; height: 2px; border-radius: 2px; background: var(--ar-color-text);"></span><span style="width: 18px; height: 2px; border-radius: 2px; background: var(--ar-color-text);"></span></span>
+            </summary>
+            <div style="position: absolute; right: 0; top: calc(100% + 10px); min-width: 220px; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); box-shadow: var(--ar-shadow-lg); padding: 8px; display: flex; flex-direction: column; gap: 2px; z-index: 50;">
+              <a href="/" onClick="{{ onOpenHome }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">Beranda</a>
+              <a href="#kota" onClick="{{ closeMenu }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">Kota Layanan</a>
+              <a href="/travel" onClick="{{ onOpenTravel }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">Travel</a>
+              <a href="/blog" onClick="{{ onOpenBlog }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">Blog</a>
+            </div>
+          </details>
+        </nav>
+      </div>
+    </header>
+
+    <section data-screen-label="Hero" style="background: linear-gradient(165deg, var(--ar-blue-950) 0%, var(--city-navy-2) 60%, var(--ar-blue-900) 100%); color: #ffffff;">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(64px, 10vh, 120px) clamp(20px, 4vw, 32px) clamp(48px, 7vh, 72px);">
+        <span data-hero="1" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(147,197,246,0.14); border: 1px solid rgba(147,197,246,0.35); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--city-sky);">Direktori Kota Layanan</span>
+        <h1 data-hero="1" style="margin: 18px 0 0; max-width: 780px; font-size: clamp(32px, 5.5vw, 58px); line-height: 1.08; letter-spacing: -0.02em; font-weight: var(--ar-weight-bold); color: #ffffff; text-wrap: balance;">Sewa Mobil dengan Supir di Kota Tujuan Anda</h1>
+        <p data-hero="1" style="margin: 18px 0 0; max-width: 620px; font-size: clamp(1rem, 1.4vw, 1.125rem); line-height: 1.65; color: var(--ar-blue-100); text-wrap: pretty;">Satu standar layanan premium Arasya di setiap kota — pilih kota keberangkatan Anda untuk melihat tarif, armada, dan rute, lalu pesan melalui WhatsApp.</p>
+        <div data-hero="1" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px;">
+          <a href="#kota" data-cta="hub-hero-pilih" style="display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 26px; border-radius: var(--ar-radius-md); background: var(--city-cta); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; box-shadow: 0 8px 24px rgba(217,81,28,0.35); transition: background var(--ar-duration-fast) var(--ar-ease), transform var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--city-cta-hover); transform: translateY(-1px);">Pilih Kota</a>
+          <a href="{{ waHero }}" target="_blank" rel="noopener noreferrer" data-cta="hub-hero-wa" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 24px; border-radius: var(--ar-radius-md); background: var(--ar-color-whatsapp); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; transition: background var(--ar-duration-fast) var(--ar-ease), transform var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--ar-color-whatsapp-hover); transform: translateY(-1px);">{{ waIconSm }}Konsultasi WhatsApp</a>
+        </div>
+        <div data-hero="1" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px;">
+          <span style="display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); font-size: var(--ar-text-sm); color: #ffffff;"><span style="width: 5px; height: 5px; border-radius: 999px; background: var(--city-sky); flex: 0 0 auto;"></span>Indonesia &amp; luar negeri</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); font-size: var(--ar-text-sm); color: #ffffff;"><span style="width: 5px; height: 5px; border-radius: 999px; background: var(--city-sky); flex: 0 0 auto;"></span>Tarif transparan per kota</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); font-size: var(--ar-text-sm); color: #ffffff;"><span style="width: 5px; height: 5px; border-radius: 999px; background: var(--city-sky); flex: 0 0 auto;"></span>Support admin 24/7</span>
+        </div>
+      </div>
+    </section>
+
+    <section data-screen-label="Kepercayaan" style="background: #ffffff; border-bottom: 1px solid var(--ar-color-border);">
+      <div class="ar-reveal" style="max-width: 1160px; margin: 0 auto; padding: clamp(32px, 5vw, 52px) clamp(20px, 4vw, 32px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: clamp(18px, 3vw, 28px);">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--ar-radius-md); background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); color: var(--ar-color-primary); display: flex; align-items: center; justify-content: center;">{{ icShield }}</div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <h3 style="margin: 0; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">Driver Berpengalaman</h3>
+            <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">Tertib, tepat waktu, dan memahami rute setiap kota layanan.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--ar-radius-md); background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); color: var(--ar-color-primary); display: flex; align-items: center; justify-content: center;">{{ icCar }}</div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <h3 style="margin: 0; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">Mobil Terawat</h3>
+            <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">Armada bersih dan diperiksa sebelum setiap penjemputan.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--ar-radius-md); background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); color: var(--ar-color-primary); display: flex; align-items: center; justify-content: center;">{{ icCheck }}</div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <h3 style="margin: 0; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">Harga Transparan</h3>
+            <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">Penawaran tertulis tanpa biaya tersembunyi, di kota mana pun.</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--ar-radius-md); background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); color: var(--ar-color-primary); display: flex; align-items: center; justify-content: center;">{{ icPhone }}</div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <h3 style="margin: 0; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">Support 24/7</h3>
+            <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">Admin siap membantu pemesanan kapan pun melalui WhatsApp.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kota" data-screen-label="Direktori Kota" style="background: var(--ar-color-bg);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 88px) clamp(20px, 4vw, 32px);">
+        <div class="ar-reveal" style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;">
+          <x-import component-from-global-scope="ArasyaDS.SectionHeading" eyebrow="Kota Layanan" title="Pilih kota keberangkatan Anda" subtitle="Setiap halaman memuat tarif, armada, destinasi, dan rute khas kota tersebut." hint-size="min(100%,560px),110px"></x-import>
+          <div style="display: flex; gap: 8px;">
+            <x-import component-from-global-scope="ArasyaDS.Chip" selected="{{ regIsSemua }}" on-click="{{ setRegSemua }}" hint-size="80px,36px">Semua</x-import>
+            <x-import component-from-global-scope="ArasyaDS.Chip" selected="{{ regIsId }}" on-click="{{ setRegId }}" hint-size="100px,36px">Indonesia</x-import>
+            <x-import component-from-global-scope="ArasyaDS.Chip" selected="{{ regIsIntl }}" on-click="{{ setRegIntl }}" hint-size="110px,36px">Luar Negeri</x-import>
+          </div>
+        </div>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+          <div style="margin-top: 32px;">
+            <div class="ar-reveal" style="display: flex; align-items: baseline; gap: 10px;">
+              <h2 style="margin: 0; font-size: var(--ar-text-lg); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">{{ g.label }}</h2>
+              <span style="font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.06em; color: var(--ar-color-text-muted);">{{ g.countLabel }}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 16px;">
+              <sc-for list="{{ g.items }}" as="ct" hint-placeholder-count="3">
+                <a class="ar-reveal" href="/{{ ct.slug }}" onClick="{{ ct.onOpen }}" data-cta="hub-card" data-city="{{ ct.code }}" style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); padding: var(--ar-space-5); text-decoration: none; transition: box-shadow var(--ar-duration-normal) var(--ar-ease), transform var(--ar-duration-normal) var(--ar-ease), border-color var(--ar-duration-normal) var(--ar-ease);" style-hover="box-shadow: var(--ar-shadow-lg); transform: translateY(-3px); border-color: var(--ar-color-border-strong);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ar-blue-700);">{{ ct.typeLabel }}</span>
+                    <span style="font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.1em; color: var(--ar-color-text-muted);">{{ ct.code }}</span>
+                  </div>
+                  <h3 style="margin: 4px 0 0; font-size: var(--ar-text-lg); font-weight: var(--ar-weight-semibold); color: var(--ar-color-text);">Sewa Mobil {{ ct.name }}</h3>
+                  <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">Melayani {{ ct.serviceLine }}.</p>
+                  <sc-if value="{{ ct.hasPrice }}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">{{ ct.priceLine }}</span></sc-if>
+                  <span style="margin-top: auto; padding-top: 6px; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary);">Lihat tarif &amp; armada →</span>
+                </a>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <div class="ar-reveal" style="margin-top: 32px; background: #ffffff; border: 2px dashed var(--ar-color-border); border-radius: var(--ar-radius-xl); padding: clamp(24px, 4vw, 40px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px;">
+          <div style="flex: 1 1 320px; min-width: min(100%, 320px);">
+            <h3 style="margin: 0; font-size: clamp(18px, 2.2vw, 24px); font-weight: var(--ar-weight-bold); color: var(--ar-color-text); text-wrap: balance;">Kota Anda belum terdaftar?</h3>
+            <p style="margin: 8px 0 0; font-size: var(--ar-text-sm); line-height: 1.65; color: var(--ar-color-text-secondary); text-wrap: pretty;">Kami tetap dapat melayani — sampaikan kota dan rencana perjalanan Anda, admin kami menyiapkan penawaran tertulis.</p>
+          </div>
+          <a href="{{ waNewCity }}" target="_blank" rel="noopener noreferrer" data-cta="hub-kota-baru" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 24px; border-radius: var(--ar-radius-md); background: var(--ar-color-whatsapp); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; transition: background var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--ar-color-whatsapp-hover);">{{ waIconSm }}Tanya Kota Lain</a>
+        </div>
+      </div>
+    </section>
+
+    <section data-screen-label="Standar Layanan" style="background: linear-gradient(165deg, var(--ar-blue-950) 0%, var(--city-navy-2) 60%, var(--ar-blue-900) 100%); color: #ffffff;">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 96px) clamp(20px, 4vw, 32px); display: flex; flex-wrap: wrap; gap: clamp(24px, 4vw, 56px);">
+        <div class="ar-reveal" style="flex: 1 1 280px; min-width: min(100%, 280px);">
+          <p style="margin: 0; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.1em; text-transform: uppercase; color: var(--city-sky);">Standar Layanan</p>
+          <h2 style="margin: 12px 0 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.15; letter-spacing: -0.01em; font-weight: var(--ar-weight-bold); color: #ffffff; text-wrap: balance;">Kota berbeda, standar Arasya yang sama</h2>
+          <div style="width: 56px; height: 2px; background: var(--ar-blue-400); margin-top: 20px;"></div>
+        </div>
+        <div class="ar-reveal" style="flex: 1.4 1 320px; min-width: min(100%, 320px); display: flex; flex-direction: column; gap: 16px;">
+          <p style="margin: 0; font-size: var(--ar-text-lg); line-height: 1.65; color: var(--ar-blue-100); text-wrap: pretty;">Seluruh kota layanan dioperasikan oleh satu perusahaan yang sama — PT. Ayomi Raya — dengan prosedur resmi yang identik dari pemesanan hingga keberangkatan.</p>
+          <p style="margin: 0; font-size: var(--ar-text-md); line-height: 1.75; color: var(--ar-blue-200); text-wrap: pretty;">Di kota mana pun Anda berangkat, Anda berhadapan dengan admin resmi yang sama: penawaran tertulis tanpa biaya tersembunyi, pembayaran hanya ke rekening resmi perusahaan, dan driver terverifikasi yang memahami rute setempat.</p>
+          <p style="margin: 0; font-size: var(--ar-text-md); line-height: 1.75; color: var(--ar-blue-200); text-wrap: pretty;">Kota layanan kami bertambah secara bertahap. Halaman setiap kota selalu memuat tarif dan armada terkini — simpan halaman ini sebagai titik awal perjalanan Anda berikutnya.</p>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 8px;">
+            <a href="{{ waConsult }}" target="_blank" rel="noopener noreferrer" data-cta="hub-consult" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 24px; border-radius: var(--ar-radius-md); background: var(--ar-color-whatsapp); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; transition: background var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--ar-color-whatsapp-hover);">{{ waIconSm }}Konsultasi WhatsApp</a>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: var(--ar-text-md); font-weight: var(--ar-weight-bold); color: #ffffff;">0821-2402-4281</span>
+              <span style="font-size: var(--ar-text-xs); color: var(--ar-blue-200);">Setiap hari · 24 jam · Bahasa Indonesia</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer data-screen-label="Footer" style="background: var(--ar-blue-950); color: var(--ar-blue-200);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(44px, 6vw, 64px) clamp(20px, 4vw, 32px); display: flex; flex-wrap: wrap; gap: clamp(28px, 4vw, 64px);">
+        <div style="flex: 1.4 1 280px; min-width: min(100%, 280px); display: flex; flex-direction: column; gap: 12px;">
+          <img src="../city-landing/assets/brand/logo-arasya.webp" alt="Arasya Rent Car" style="height: 32px; width: auto; display: block; align-self: flex-start; filter: invert(1) brightness(1.6);"/>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7; max-width: 380px;">Sewa mobil premium dengan supir — Indonesia dan luar negeri.</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7;">{{ addressLine }}</p>
+        </div>
+        <div style="flex: 1 1 220px; min-width: min(100%, 220px); display: flex; flex-direction: column; gap: 8px;">
+          <p style="margin: 0 0 4px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-blue-400);">Kontak</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7;">WhatsApp: 0821-2402-4281</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7;">0822-9885-4855 · 0813-9990-9602</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm);">Instagram: <a href="https://www.instagram.com/arasyarentcar/" target="_blank" rel="noopener" style="color: var(--city-sky); text-decoration: none;">@arasyarentcar</a></p>
+        </div>
+        <div style="flex: 1 1 220px; min-width: min(100%, 220px); display: flex; flex-direction: column; gap: 8px;">
+          <p style="margin: 0 0 4px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-blue-400);">Jelajahi</p>
+          <a href="#kota" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">Semua Kota Layanan</a>
+          <a href="/blog" onClick="{{ onOpenBlog }}" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">Blog Arasya</a>
+          <a href="/travel" onClick="{{ onOpenTravel }}" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">Arasya Travel</a>
+        </div>
+        <p style="margin: 0; flex: 1 1 100%; padding-top: 18px; border-top: 1px solid rgba(147,197,246,0.18); font-size: var(--ar-text-xs); color: var(--ar-blue-400);">© 2026 PT. Ayomi Raya — Arasya Rent Car. Seluruh hak cipta dilindungi.</p>
+      </div>
+    </footer>
+
+  </div>
+  <sc-if value="{{ showFab }}" hint-placeholder-val="{{ true }}">
+    <a id="wa-fab" href="{{ waFab }}" target="_blank" rel="noopener noreferrer" aria-label="Chat WhatsApp Arasya Rent Car" data-cta="hub-fab-wa" style="position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 40; width: 58px; height: 58px; border-radius: 999px; background: var(--ar-color-whatsapp); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 28px rgba(37,211,102,0.4), 0 2px 8px rgba(1,24,48,0.2); transition: transform var(--ar-duration-fast) var(--ar-ease), background var(--ar-duration-fast) var(--ar-ease);" style-hover="transform: scale(1.06); background: var(--ar-color-whatsapp-hover);">{{ waIconLg }}</a>
+  </sc-if>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;region&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;semua&quot;, &quot;options&quot;: [&quot;semua&quot;, &quot;indonesia&quot;, &quot;luar-negeri&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Direktori&quot; },
+  &quot;phone&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;6282124024281&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Kontak&quot; },
+  &quot;floatingWa&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Layout&quot; }
+}">
+class Component extends DCLogic {
+  state = { dsReady: !!window.ArasyaDS, cities: null, shared: null, anims: null, region: null };
+
+  componentDidMount() {
+    document.documentElement.lang = 'id';
+    Promise.all([import('../city-landing/cities.js'), import('../city-landing/shared.js'), import('../city-landing/anims.js')]).then(([c, s, a]) => {
+      this.setState({ cities: c.cities, shared: s, anims: a }, () => {
+        this.applySeo();
+        a.startAnims(this);
+      });
+    });
+    if (!this.state.dsReady) {
+      this._poll = setInterval(() => {
+        if (window.ArasyaDS) {
+          clearInterval(this._poll);
+          this.setState({ dsReady: true });
+        }
+      }, 100);
+    }
+  }
+
+  componentDidUpdate() {
+    if (this.state.anims) this.state.anims.revealNew(this);
+  }
+
+  componentWillUnmount() {
+    if (this._poll) clearInterval(this._poll);
+    if (this.state.anims) this.state.anims.stopAnims(this);
+  }
+
+  phone() {
+    return this.props.phone ?? ((this.state.shared && this.state.shared.OFFICIAL.waPrimary) || '6282124024281');
+  }
+
+  region() {
+    return this.state.region ?? this.props.region ?? 'semua';
+  }
+
+  entries() {
+    const reg = this.state.cities || {};
+    return Object.entries(reg).map(([key, v]) => Object.assign({ key }, v));
+  }
+
+  wa(message, ref) {
+    const text = message + (ref ? ' [Ref: ' + ref + ']' : '');
+    const s = this.state.shared;
+    if (s) return s.waHref(this.phone(), text);
+    const digits = String(this.phone()).replace(/\D/g, '');
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
+  }
+
+  previewFile(t) {
+    return {
+      city: '../city-landing/CityLanding.dc.html',
+      region: '../region-landing/RegionLanding.dc.html',
+      country: '../country-landing/CountryLanding.dc.html',
+    }[t] || '../city-landing/CityLanding.dc.html';
+  }
+
+  applySeo() {
+    const list = this.entries();
+    document.title = 'Sewa Mobil dengan Supir — Kota Layanan Arasya Rent Car';
+    const names = list.map((e) => e.name);
+    const nameList = names.length > 1 ? names.slice(0, -1).join(', ') + ', dan ' + names[names.length - 1] : names.join('');
+    const desc = 'Direktori kota layanan Arasya Rent Car: sewa mobil premium dengan supir di ' + nameList + '. Tarif transparan, driver terverifikasi, pesan melalui WhatsApp.';
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta && names.length) meta.setAttribute('content', desc);
+    const base = this.state.shared.OFFICIAL.siteUrl || 'https://arasyarentcar.com';
+    const pageUrl = base + '/sewa-mobil';
+    document.querySelectorAll('[data-seo-extra]').forEach((el) => el.remove());
+    const add = (tag, attrs) => { const el = document.createElement(tag); for (const k in attrs) el.setAttribute(k, attrs[k]); el.setAttribute('data-seo-extra', '1'); document.head.appendChild(el); };
+    add('link', { rel: 'canonical', href: pageUrl });
+    [['og:type', 'website'], ['og:locale', 'id_ID'], ['og:site_name', 'Arasya Rent Car'], ['og:title', document.title], ['og:description', desc], ['og:url', pageUrl]].forEach(([k, v]) => add('meta', { property: k, content: v }));
+    const old = document.getElementById('seo-jsonld');
+    if (old) old.remove();
+    const digits = String(this.phone()).replace(/\D/g, '');
+    const data = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'AutoRental',
+          name: 'Arasya Rent Car',
+          legalName: 'PT. Ayomi Raya',
+          description: 'Sewa mobil premium dengan supir profesional di Indonesia dan luar negeri.',
+          telephone: '+' + digits,
+          address: { '@type': 'PostalAddress', streetAddress: this.state.shared.OFFICIAL.addressStreet, addressLocality: this.state.shared.OFFICIAL.addressLocality, postalCode: this.state.shared.OFFICIAL.postalCode, addressCountry: 'ID' },
+          sameAs: [this.state.shared.OFFICIAL.instagram],
+          areaServed: Array.from(new Set(list.flatMap((e) => e.areaServed || []))),
+        },
+        {
+          '@type': 'ItemList',
+          name: 'Kota Layanan Arasya Rent Car',
+          itemListElement: list.map((e, i) => ({ '@type': 'ListItem', position: i + 1, name: 'Sewa Mobil ' + e.name, url: base + '/' + e.slug })),
+        },
+      ],
+    };
+    const s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.id = 'seo-jsonld';
+    s.textContent = JSON.stringify(data);
+    document.head.appendChild(s);
+  }
+
+  waIcon(size) {
+    return React.createElement(
+      'svg',
+      { key: 'wa' + size, width: size, height: size, viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': 'true' },
+      React.createElement('path', {
+        d: 'M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.39c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.83 9.83 0 0 0 12.04 2Zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.17.25-.64.8-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z',
+      })
+    );
+  }
+
+  icon(name, size) {
+    const P = (d) => React.createElement('path', { d, key: d.slice(0, 10) });
+    const C = (cx, cy, r) => React.createElement('circle', { cx, cy, r, key: 'c' + cx + '-' + cy });
+    const kids = {
+      car: [P('M4 16v-3.2c0-.5.1-1 .3-1.4L5.9 8.2A2 2 0 0 1 7.7 7h8.6a2 2 0 0 1 1.8 1.2l1.6 3.2c.2.4.3.9.3 1.4V16'), P('M2.5 16h19'), C(7, 18.5, 1.5), C(17, 18.5, 1.5), P('M6.5 12h11')],
+      shield: [P('M12 3l7 3v5.2c0 4.3-3 8.2-7 9.3-4-1.1-7-5-7-9.3V6l7-3z'), P('M9 12l2 2 4-4')],
+      check: [P('M20 6L9 17l-5-5')],
+      phone: [P('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z')],
+    };
+    return React.createElement(
+      'svg',
+      { key: 'ic-' + name, width: size || 22, height: size || 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
+      kids[name] || kids.car
+    );
+  }
+
+  renderVals() {
+    const list = this.entries();
+    const typeLabels = { city: 'Kota', region: 'Wilayah', country: 'Negara' };
+    const s = this.state.shared;
+    const lows = s ? s.fleet().map((f) => f.dalamKota).filter((n) => typeof n === 'number') : [];
+    const fleetFrom = lows.length ? 'Mulai ' + s.formatIdr(Math.min(...lows)) + ' · 12 jam termasuk driver' : '';
+    const mk = (e) => ({
+      name: e.name,
+      code: e.code,
+      slug: e.slug,
+      serviceLine: e.serviceLine,
+      typeLabel: typeLabels[e.pageType] || 'Kota',
+      hasPrice: !!fleetFrom && e.country === 'ID',
+      priceLine: fleetFrom,
+      onOpen: (ev) => {
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+        ev.preventDefault();
+        window.location.href = this.previewFile(e.template) + '?city=' + e.key;
+      },
+    });
+    const all = [
+      { key: 'indonesia', label: 'Indonesia', items: list.filter((e) => e.country === 'ID').map(mk) },
+      { key: 'luar-negeri', label: 'Luar Negeri', items: list.filter((e) => e.country !== 'ID').map(mk) },
+    ].filter((g) => g.items.length);
+    const rk = this.region();
+    const groups = all.filter((g) => rk === 'semua' || g.key === rk).map((g) => ({ label: g.label, countLabel: g.items.length + ' halaman', items: g.items }));
+    const waGeneral = 'Halo admin Arasya Rent Car, saya ingin memesan unit mobil dengan supir. Mohon dibantu. Terima kasih.';
+    return {
+      addressLine: this.state.shared ? this.state.shared.OFFICIAL.addressLine : '',
+      groups,
+      regIsSemua: rk === 'semua',
+      regIsId: rk === 'indonesia',
+      regIsIntl: rk === 'luar-negeri',
+      setRegSemua: () => this.setState({ region: 'semua' }),
+      setRegId: () => this.setState({ region: 'indonesia' }),
+      setRegIntl: () => this.setState({ region: 'luar-negeri' }),
+      waIconSm: this.waIcon(20),
+      waIconLg: this.waIcon(30),
+      icShield: this.icon('shield'),
+      icCar: this.icon('car'),
+      icCheck: this.icon('check'),
+      icPhone: this.icon('phone'),
+      waNav: this.wa(waGeneral, 'HUB-nav'),
+      waHero: this.wa(waGeneral, 'HUB-hero'),
+      waFab: this.wa(waGeneral, 'HUB-fab'),
+      waConsult: this.wa(waGeneral, 'HUB-standar'),
+      waNewCity: this.wa('Halo admin Arasya Rent Car, saya membutuhkan layanan di kota yang belum terdaftar di situs. Kota tujuan saya: ', 'HUB-kota-baru'),
+      closeMenu: (ev) => { const d = ev.target.closest('details'); if (d) d.open = false; },
+      onOpenHome: (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; ev.preventDefault(); window.location.href = '../home/Home.dc.html'; },
+      onOpenTravel: (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; ev.preventDefault(); window.location.href = '../travel/Travel.dc.html'; },
+      showFab: this.props.floatingWa ?? true,
+      onOpenBlog: (ev) => {
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+        ev.preventDefault();
+        window.location.href = '../blog-index/BlogIndex.dc.html';
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

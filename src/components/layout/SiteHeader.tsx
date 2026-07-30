@@ -1,0 +1,240 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import type { Locale } from '@/types';
+import { localeHref } from '@/lib/localize';
+
+export interface NavItem {
+  label: string;
+  href: string;
+  /** In-page anchors close the burger; route links navigate away. */
+  anchor?: boolean;
+}
+
+interface SiteHeaderProps {
+  locale: Locale;
+  ctaLabel: string;
+  ctaHref: string;
+  /** `data-city` on the CTA, for GA4 attribution. */
+  cityCode?: string;
+  items: NavItem[];
+  /** Path of the current page in the other locale; omit to hide the pill. */
+  altLocaleHref?: string;
+}
+
+const LINK_STYLE = {
+  fontSize: 'var(--ar-text-sm)',
+  fontWeight: 'var(--ar-weight-medium)',
+  color: 'var(--ar-color-text-secondary)',
+  textDecoration: 'none',
+} as const;
+
+const DROP_LINK_STYLE = {
+  display: 'block',
+  padding: '10px 12px',
+  borderRadius: 'var(--ar-radius-md)',
+  fontSize: 'var(--ar-text-sm)',
+  fontWeight: 'var(--ar-weight-medium)',
+  color: 'var(--ar-color-text-secondary)',
+  textDecoration: 'none',
+} as const;
+
+/**
+ * Sticky header shared by every marketing page.
+ *
+ * The sub-768px menu is a native `<details>/<summary>`, exactly as the
+ * prototypes do it — which means the whole header is a server component with no
+ * JS at all. `js-nav-close` lets one tiny delegated listener collapse the menu
+ * on link click (see landing.css / NavAutoClose).
+ */
+export function SiteHeader({
+  locale,
+  ctaLabel,
+  ctaHref,
+  cityCode,
+  items,
+  altLocaleHref,
+}: SiteHeaderProps) {
+  const other: Locale = locale === 'id' ? 'en' : 'id';
+
+  return (
+    <header
+      data-screen-label="Header"
+      style={{
+        order: 10,
+        position: 'sticky',
+        top: 0,
+        zIndex: 30,
+        background: 'rgba(255, 255, 255, 0.88)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--ar-color-border)',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1160,
+          margin: '0 auto',
+          padding: '10px clamp(20px, 4vw, 32px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
+        <Link
+          href={localeHref(locale)}
+          aria-label="Beranda Arasya Rent Car"
+          style={{ display: 'inline-flex', alignItems: 'center' }}
+        >
+          <Image
+            src="/assets/brand/logo-arasya.webp"
+            alt="Arasya Rent Car"
+            width={128}
+            height={32}
+            priority
+            style={{ height: 'clamp(26px, 4vw, 32px)', width: 'auto', display: 'block' }}
+          />
+        </Link>
+
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 2.4vw, 14px)' }}>
+          <div className="site-nav-links">
+            {items.map((it) => (
+              <Link key={it.href + it.label} href={it.href} style={LINK_STYLE}>
+                {it.label}
+              </Link>
+            ))}
+            {altLocaleHref && <LangPill locale={locale} other={other} href={altLocaleHref} />}
+            <a
+              href={ctaHref}
+              data-cta="nav-pesan"
+              data-city={cityCode}
+              className="site-cta"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 38,
+                padding: '0 clamp(12px, 2.4vw, 18px)',
+                borderRadius: 'var(--ar-radius-md)',
+                background: 'var(--city-cta)',
+                color: '#ffffff',
+                fontSize: 'var(--ar-text-sm)',
+                fontWeight: 'var(--ar-weight-semibold)',
+                textDecoration: 'none',
+                transition: 'background var(--ar-duration-fast) var(--ar-ease)',
+              }}
+            >
+              {ctaLabel}
+            </a>
+          </div>
+
+          {/* Mobile: same links, collapsed. Native details = zero JS. */}
+          <details className="site-nav-burger">
+            <summary
+              aria-label="Buka menu navigasi"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                border: '1px solid var(--ar-color-border)',
+                borderRadius: 'var(--ar-radius-md)',
+                background: '#ffffff',
+                cursor: 'pointer',
+              }}
+            >
+              <span className="site-burger-open" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <Bar />
+                <Bar />
+                <Bar />
+              </span>
+              <span className="site-burger-close" aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>
+                ✕
+              </span>
+            </summary>
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 10px)',
+                minWidth: 220,
+                background: '#ffffff',
+                border: '1px solid var(--ar-color-border)',
+                borderRadius: 'var(--ar-radius-lg)',
+                boxShadow: 'var(--ar-shadow-lg)',
+                padding: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                zIndex: 40,
+              }}
+            >
+              {items.map((it) => (
+                <Link
+                  key={'m' + it.href + it.label}
+                  href={it.href}
+                  className="js-nav-close"
+                  style={DROP_LINK_STYLE}
+                >
+                  {it.label}
+                </Link>
+              ))}
+              <a href={ctaHref} className="js-nav-close" style={DROP_LINK_STYLE}>
+                {ctaLabel}
+              </a>
+              {altLocaleHref && (
+                <div style={{ padding: '8px 12px 2px' }}>
+                  <LangPill locale={locale} other={other} href={altLocaleHref} />
+                </div>
+              )}
+            </div>
+          </details>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+function Bar() {
+  return (
+    <span
+      style={{ width: 18, height: 2, borderRadius: 2, background: 'var(--ar-color-text)' }}
+    />
+  );
+}
+
+/** ID | EN switcher. Only rendered when the page exists in both locales. */
+function LangPill({ locale, other, href }: { locale: Locale; other: Locale; href: string }) {
+  const cell = (active: boolean) =>
+    ({
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '4px 10px',
+      borderRadius: 999,
+      fontSize: 'var(--ar-text-xs)',
+      fontWeight: 'var(--ar-weight-semibold)',
+      letterSpacing: '0.04em',
+      textDecoration: 'none',
+      background: active ? 'var(--ar-blue-950)' : 'transparent',
+      color: active ? '#ffffff' : 'var(--ar-color-text-secondary)',
+    }) as const;
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: 2,
+        border: '1px solid var(--ar-color-border)',
+        borderRadius: 999,
+      }}
+    >
+      <span style={cell(true)}>{locale.toUpperCase()}</span>
+      <Link href={href} hrefLang={other} style={cell(false)}>
+        {other.toUpperCase()}
+      </Link>
+    </span>
+  );
+}

@@ -1,0 +1,448 @@
+/**
+ * Static equivalent of the prototypes' `applySeo()` functions.
+ *
+ * The previews wrote into `document.head` at runtime; production emits the same
+ * output at build time. Each builder returns a Next `Metadata` plus a JSON-LD
+ * graph, and the two must stay in lockstep with the visible page — in
+ * particular FAQPage must mirror the rendered FAQ item for item, or the rich
+ * result is a policy violation rather than merely wrong.
+ *
+ * CANONICAL FORM. The prototypes are inconsistent: Home canonicalises to
+ * `base + '/'` and Travel to `base + '/travel/'`, while shared.js uses
+ * `base + '/' + slug` with no trailing slash. Next serves the no-slash form and
+ * 308-redirects the other, so emitting `/travel/` verbatim would point the
+ * canonical at a redirect. Canonicals are therefore normalised to no trailing
+ * slash except the locale root (`/`, `/en/`).
+ */
+import type { Metadata } from 'next';
+import type { FaqItem, Locale, Location, Post, Site } from '@/types';
+import { fullFaq, official, officialFor, fleetPriceRange, type Official } from './shared';
+import { hasEnLocation, hasEnPost, localeUrl, OG_LOCALE } from './localize';
+
+export interface JsonLdGraph {
+  '@context': 'https://schema.org';
+  '@graph': Record<string, unknown>[];
+}
+
+/** Absolute URL for a page in a locale, with canonicals normalised. */
+export function pageUrl(siteUrl: string, locale: Locale, path = ''): string {
+  return localeUrl(siteUrl, locale, path);
+}
+
+/**
+ * hreflang set. `available` lists the locales this particular page exists in —
+ * an untranslated entry must not advertise an /en/ alternate that 404s.
+ */
+function alternates(
+  siteUrl: string,
+  locale: Locale,
+  paths: Partial<Record<Locale, string>>
+): Metadata['alternates'] {
+  const languages: Record<string, string> = {};
+  if (paths.id !== undefined) languages['id'] = localeUrl(siteUrl, 'id', paths.id);
+  if (paths.en !== undefined) languages['en'] = localeUrl(siteUrl, 'en', paths.en);
+  // x-default points at Indonesian — the default locale, never a geo redirect.
+  if (paths.id !== undefined) languages['x-default'] = localeUrl(siteUrl, 'id', paths.id);
+
+  const self = paths[locale];
+  return {
+    canonical: self === undefined ? undefined : localeUrl(siteUrl, locale, self),
+    languages,
+  };
+}
+
+interface MetaInput {
+  siteUrl: string;
+  locale: Locale;
+  paths: Partial<Record<Locale, string>>;
+  title: string;
+  description: string;
+  image?: string;
+}
+
+function baseMetadata({ siteUrl, locale, paths, title, description, image }: MetaInput): Metadata {
+  const url = paths[locale] === undefined ? undefined : localeUrl(siteUrl, locale, paths[locale]);
+  const imageAbs = image ? new URL(image, siteUrl).href : undefined;
+  return {
+    title,
+    description,
+    alternates: alternates(siteUrl, locale, paths),
+    openGraph: {
+      type: 'website',
+      locale: OG_LOCALE[locale],
+      siteName: 'Arasya Rent Car',
+      title,
+      description,
+      url,
+      ...(imageAbs ? { images: [imageAbs] } : {}),
+    },
+    twitter: { card: imageAbs ? 'summary_large_image' : 'summary' },
+  };
+}
+
+/** AutoRental node, shared by every page type. */
+function autoRental(
+  off: Official,
+  opts: { url: string; description: string; image?: string; priceRange?: string; areaServed: string[] }
+): Record<string, unknown> {
+  return {
+    '@type': 'AutoRental',
+    name: 'Arasya Rent Car',
+    legalName: 'PT. Ayomi Raya',
+    url: opts.url,
+    ...(opts.image ? { image: opts.image } : {}),
+    ...(opts.priceRange ? { priceRange: opts.priceRange } : {}),
+    description: opts.description,
+    telephone: '+' + String(off.waPrimary).replace(/\D/g, ''),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: off.addressStreet,
+      addressLocality: off.addressLocality,
+      postalCode: off.postalCode,
+      addressCountry: 'ID',
+    },
+    sameAs: [off.instagram],
+    areaServed: opts.areaServed,
+  };
+}
+
+function faqPage(items: FaqItem[]): Record<string, unknown> {
+  return {
+    '@type': 'FAQPage',
+    mainEntity: items.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  };
+}
+
+/* ------------------------------------------------- city / region / country */
+
+export function landingSeo(location: Location, site: Site, locale: Locale) {
+  // Per-entry WhatsApp routing, so AutoRental.telephone matches the number the
+  // page's own CTAs dial. A structured-data phone that differs from the visible
+  // one can surface in a knowledge panel and send calls to the wrong inbox.
+  const off = officialFor(site, location);
+  const base = off.siteUrl;
+  // Only advertise /en/ when the entry actually has English content.
+  const paths: Partial<Record<Locale, string>> = { id: location.slug };
+  if (hasEnLocation(location)) paths.en = location.slugEn as string;
+
+  const url = localeUrl(base, locale, paths[locale] ?? location.slug);
+  const heroAbs = location.heroImage ? new URL(location.heroImage, base).href : undefined;
+
+  const metadata = baseMetadata({
+    siteUrl: base,
+    locale,
+    paths,
+    title: location.metaTitle,
+    description: location.metaDescription,
+    image: location.heroImage,
+  });
+
+  const jsonLd: JsonLdGraph = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      autoRental(off, {
+        url,
+        description: location.metaDescription,
+        image: heroAbs,
+        // `fleetPriceRange` is the Jabodetabek rate card in IDR. Overseas pages
+        // do not publish it on the page, and must not publish it here either —
+        // structured-data prices can surface in the search result itself, so a
+        // rate we cannot honour is worse in markup than in copy: it reaches the
+        // customer before they ever open the site.
+        priceRange: location.country === 'ID' ? fleetPriceRange(site) : undefined,
+        areaServed: location.areaServed,
+      }),
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: locale === 'en' ? 'Home' : 'Beranda',
+            item: localeUrl(base, locale),
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: locale === 'en' ? 'Car Rental' : 'Sewa Mobil',
+            item: localeUrl(base, locale, 'sewa-mobil'),
+          },
+          { '@type': 'ListItem', position: 3, name: location.name, item: url },
+        ],
+      },
+      // Mirrors the visible accordion exactly — same source call.
+      faqPage(fullFaq(location, off)),
+    ],
+  };
+
+  return { metadata, jsonLd };
+}
+
+/* ------------------------------------------------------------------- hub */
+
+export function hubSeo(locations: Location[], site: Site, locale: Locale) {
+  const off = official(site);
+  const base = off.siteUrl;
+  const en = locale === 'en';
+  const names = locations.map((l) => l.name);
+  const joiner = en ? ', and ' : ', dan ';
+  const nameList =
+    names.length > 1 ? names.slice(0, -1).join(', ') + joiner + names[names.length - 1] : names.join('');
+
+  const title = en
+    ? 'Car Rental with Driver — Arasya Rent Car Service Cities'
+    : 'Sewa Mobil dengan Supir — Kota Layanan Arasya Rent Car';
+  const description = en
+    ? `Arasya Rent Car service-city directory: premium chauffeured car rental in ${nameList}. Transparent rates, verified drivers, book via WhatsApp.`
+    : `Direktori kota layanan Arasya Rent Car: sewa mobil premium dengan supir di ${nameList}. Tarif transparan, driver terverifikasi, pesan melalui WhatsApp.`;
+
+  const paths: Partial<Record<Locale, string>> = { id: 'sewa-mobil', en: 'sewa-mobil' };
+  const url = localeUrl(base, locale, 'sewa-mobil');
+
+  return {
+    metadata: baseMetadata({ siteUrl: base, locale, paths, title, description }),
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        autoRental(off, {
+          url,
+          description,
+          areaServed: Array.from(new Set(locations.flatMap((l) => l.areaServed ?? []))),
+        }),
+        {
+          '@type': 'ItemList',
+          name: en ? 'Arasya Rent Car service cities' : 'Kota Layanan Arasya Rent Car',
+          itemListElement: locations.map((l, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: (en ? 'Car Rental ' : 'Sewa Mobil ') + l.name,
+            url: localeUrl(base, locale, l.slug),
+          })),
+        },
+      ],
+    } satisfies JsonLdGraph,
+  };
+}
+
+/* ------------------------------------------------------------------ home */
+
+export function homeSeo(locations: Location[], site: Site, locale: Locale, strings: {
+  seoTitle: string;
+  seoDescPre: string;
+  seoDescPost: string;
+  seoAreaFallback: string;
+}) {
+  const off = official(site);
+  const base = off.siteUrl;
+  const en = locale === 'en';
+  const names = locations.map((l) => l.name);
+  const joiner = en ? ', and ' : ', dan ';
+  const nameList =
+    names.length > 1 ? names.slice(0, -1).join(', ') + joiner + names[names.length - 1] : names.join('');
+
+  const title = strings.seoTitle;
+  const description = strings.seoDescPre + (nameList || strings.seoAreaFallback) + strings.seoDescPost;
+  const paths: Partial<Record<Locale, string>> = { id: '', en: '' };
+  const url = localeUrl(base, locale);
+
+  return {
+    metadata: baseMetadata({ siteUrl: base, locale, paths, title, description }),
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        autoRental(off, {
+          url,
+          description,
+          priceRange: fleetPriceRange(site),
+          areaServed: Array.from(new Set(locations.flatMap((l) => l.areaServed ?? []))),
+        }),
+        { '@type': 'WebSite', name: 'Arasya Rent Car', url, inLanguage: locale },
+      ],
+    } satisfies JsonLdGraph,
+  };
+}
+
+/* ---------------------------------------------------------------- travel */
+
+export interface TravelSeoRoute {
+  label: string;
+  minPrice: number;
+}
+
+export function travelSeo(
+  site: Site,
+  locale: Locale,
+  strings: { seoTitle: string; seoDesc: string; faqs: FaqItem[] },
+  routes: TravelSeoRoute[],
+  areaServed: string[]
+) {
+  const off = official(site);
+  const base = off.siteUrl;
+  const en = locale === 'en';
+  const paths: Partial<Record<Locale, string>> = { id: 'travel', en: 'travel' };
+  const url = localeUrl(base, locale, 'travel');
+
+  return {
+    metadata: baseMetadata({
+      siteUrl: base,
+      locale,
+      paths,
+      title: strings.seoTitle,
+      description: strings.seoDesc,
+    }),
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        autoRental(off, { url, description: strings.seoDesc, areaServed }),
+        {
+          '@type': 'Service',
+          name: 'Arasya Travel — Charter Drop Off Door to Door',
+          serviceType: en
+            ? 'Private intercity car charter (drop-off)'
+            : 'Charter mobil antar kota (drop off)',
+          provider: { '@type': 'AutoRental', name: 'Arasya Rent Car' },
+          areaServed,
+          inLanguage: locale,
+          hasOfferCatalog: {
+            '@type': 'OfferCatalog',
+            name: en ? 'Travel routes' : 'Rute travel',
+            itemListElement: routes.map((r) => ({
+              '@type': 'Offer',
+              name: 'Travel Drop Off ' + r.label,
+              price: r.minPrice,
+              priceCurrency: 'IDR',
+              availability: 'https://schema.org/InStock',
+            })),
+          },
+        },
+        {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: en ? 'Home' : 'Beranda',
+              item: localeUrl(base, locale),
+            },
+            { '@type': 'ListItem', position: 2, name: 'Travel', item: url },
+          ],
+        },
+        faqPage(strings.faqs),
+      ],
+    } satisfies JsonLdGraph,
+  };
+}
+
+/* ------------------------------------------------------------------ blog */
+
+export function blogIndexSeo(posts: Post[], site: Site, locale: Locale) {
+  const off = official(site);
+  const base = off.siteUrl;
+  const en = locale === 'en';
+  const title = en
+    ? 'Arasya Rent Car Blog — Guides, Itineraries & Travel Tips'
+    : 'Blog Arasya Rent Car — Panduan, Itinerari & Tips Perjalanan';
+  const description = en
+    ? 'Itineraries, destination guides, and transport tips from the Arasya Rent Car team.'
+    : 'Itinerari, panduan destinasi, dan tips transportasi dari tim Arasya Rent Car.';
+  // The blog only joins /en/ once articles carry English content — otherwise an
+  // "English" index would list Indonesian titles and excerpts.
+  const paths: Partial<Record<Locale, string>> = { id: 'blog' };
+  if (posts.some(hasEnPost)) paths.en = 'blog';
+  const url = localeUrl(base, locale, 'blog');
+
+  return {
+    metadata: baseMetadata({ siteUrl: base, locale, paths, title, description }),
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Blog',
+          name: en ? 'Arasya Rent Car Blog' : 'Blog Arasya Rent Car',
+          description,
+          inLanguage: locale,
+          url,
+          publisher: { '@type': 'Organization', name: 'PT. Ayomi Raya' },
+        },
+        {
+          '@type': 'ItemList',
+          itemListElement: posts.map((p, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: p.title,
+            url: localeUrl(base, locale, p.slug),
+          })),
+        },
+      ],
+    } satisfies JsonLdGraph,
+  };
+}
+
+export function blogPostSeo(post: Post, site: Site, locale: Locale) {
+  const off = official(site);
+  const base = off.siteUrl;
+  const paths: Partial<Record<Locale, string>> = { id: post.slug };
+  if (hasEnPost(post)) paths.en = post.slugEn as string;
+  const url = localeUrl(base, locale, paths[locale] ?? post.slug);
+
+  const metadata = baseMetadata({
+    siteUrl: base,
+    locale,
+    paths,
+    title: post.metaTitle,
+    description: post.metaDescription,
+  });
+  // Articles are og:type=article, not website.
+  if (metadata.openGraph) (metadata.openGraph as { type?: string }).type = 'article';
+
+  return {
+    metadata,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: post.metaDescription,
+          datePublished: post.datePublished,
+          dateModified: post.dateModified,
+          inLanguage: locale,
+          articleSection: post.category,
+          author: { '@type': 'Organization', name: 'Arasya Rent Car' },
+          publisher: { '@type': 'Organization', name: 'PT. Ayomi Raya' },
+          mainEntityOfPage: url,
+        },
+        {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Blog',
+              item: localeUrl(base, locale, 'blog'),
+            },
+            { '@type': 'ListItem', position: 2, name: post.title, item: url },
+          ],
+        },
+      ],
+    } satisfies JsonLdGraph,
+  };
+}
+
+/* ----------------------------------------------------------------- render */
+
+/**
+ * JSON-LD must be a real <script> in the HTML, so it is injected with
+ * dangerouslySetInnerHTML. `<` is escaped to stop a stray `</script>` inside
+ * any content field from terminating the block early.
+ */
+export function jsonLdProps(graph: JsonLdGraph) {
+  return {
+    type: 'application/ld+json',
+    dangerouslySetInnerHTML: { __html: JSON.stringify(graph).replace(/</g, '\\u003c') },
+  } as const;
+}

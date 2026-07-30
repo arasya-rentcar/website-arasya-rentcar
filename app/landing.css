@@ -1,0 +1,171 @@
+/*
+ * Layout glue for the landing templates.
+ *
+ * The .dc.html prototypes express hover states with a `style-hover=` attribute,
+ * a design-tool affordance with no React equivalent. Those become real :hover
+ * rules here, with the values copied across unchanged. Everything else stays as
+ * inline styles so the markup matches the reference line for line.
+ */
+
+/* ------------------------------------------------------------ responsive nav */
+
+.site-nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 22px);
+}
+
+.site-nav-burger {
+  position: relative;
+  display: none;
+}
+
+.site-nav-burger summary {
+  list-style: none;
+}
+
+.site-nav-burger summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Open/close glyph swap — the summary shows ✕ once the menu is open. */
+.site-nav-burger .site-burger-close {
+  display: none;
+}
+
+.site-nav-burger[open] .site-burger-open {
+  display: none;
+}
+
+.site-nav-burger[open] .site-burger-close {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .site-nav-links {
+    display: none;
+  }
+  .site-nav-burger {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------- section reordering */
+
+/*
+ * Variant layouts reorder sections via flex `order`. Values are the prototypes'
+ * own, kept identical so a variant renders in exactly the designed sequence.
+ */
+[data-variant='terang'] [data-sec='trust'] {
+  order: 55 !important;
+}
+[data-variant='terang'] [data-sec='layanan'] {
+  order: 58 !important;
+}
+[data-variant='editorial'] [data-sec='mengenal'] {
+  order: 25 !important;
+}
+[data-variant='rute'] [data-sec='routes'] {
+  order: 25 !important;
+}
+[data-variant='wisata'] [data-sec='dest'] {
+  order: 25 !important;
+}
+[data-variant='direktori'] [data-sec='dir'] {
+  order: 25 !important;
+}
+
+/* --------------------------------------------------------------- hover states */
+
+.site-cta:hover {
+  background: var(--city-cta-hover);
+}
+
+.cta-primary:hover {
+  background: var(--city-cta-hover);
+  transform: translateY(-1px);
+}
+
+.cta-wa:hover {
+  background: var(--ar-color-whatsapp-hover);
+  transform: translateY(-1px);
+}
+
+.cta-wa-flat:hover {
+  background: var(--ar-color-whatsapp-hover);
+}
+
+.wa-fab:hover {
+  transform: scale(1.06);
+  background: var(--ar-color-whatsapp-hover);
+}
+
+/* Text links that sit in dense clusters — the pSEO internal-link mesh in the
+   footers and the blog's city list, plus the hub link above the fleet grid.
+   At the designed density these are 22px tall with a 6–8px gap: a ~30px touch
+   target, which Google's mobile-friendly check flags as "clickable elements too
+   close together" and which really does cause mis-taps on a narrow phone.
+
+   Scoped to `pointer: coarse` rather than a width breakpoint, because this is
+   about the input device rather than the screen: a touch tablet gets the roomier
+   target, and every mouse-driven layout keeps exactly the spacing it was
+   designed with. Verified by `npm run qa:devices`, which emulates the pointer
+   media feature — without that emulation these rules are invisible to the
+   headless browser and appear not to have applied. */
+@media (pointer: coarse) {
+  .tap-pad {
+    padding-block: 8px;
+  }
+}
+
+.card-lift {
+  transition:
+    box-shadow var(--ar-duration-normal) var(--ar-ease),
+    transform var(--ar-duration-normal) var(--ar-ease);
+}
+
+.card-lift:hover {
+  box-shadow: var(--ar-shadow-lg);
+  transform: translateY(-3px);
+}
+
+.card-lift-bordered {
+  transition:
+    box-shadow var(--ar-duration-normal) var(--ar-ease),
+    transform var(--ar-duration-normal) var(--ar-ease),
+    border-color var(--ar-duration-normal) var(--ar-ease);
+}
+
+.card-lift-bordered:hover {
+  box-shadow: var(--ar-shadow-lg);
+  transform: translateY(-3px);
+  border-color: var(--ar-color-border-strong);
+}
+
+.zoom-media {
+  overflow: hidden;
+}
+
+.zoom-media img {
+  transition: transform 0.6s var(--ar-ease);
+}
+
+.zoom-media:hover img {
+  transform: scale(1.05);
+}
+
+.link-arrow:hover {
+  color: var(--ar-color-primary-hover);
+  text-decoration: underline;
+}
+
+.copy-chip:hover {
+  background: var(--ar-blue-100);
+}
+
+.copy-chip-dark:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Reveal targets must remain visible without JS — GSAP applies from-states
+   itself, so no opacity is set here. Crawlers and print see full content. */

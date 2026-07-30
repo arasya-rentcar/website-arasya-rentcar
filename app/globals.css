@@ -1,0 +1,41 @@
+/* Design system first — it defines the --ar-* tokens everything else uses. */
+@import '../src/design-system/fonts.css';
+@import '../src/design-system/arasya-ds.css';
+
+/*
+ * Page-level base styles, copied from the <style> block shared by every
+ * landing .dc.html prototype (CityLanding / RegionLanding / CountryLanding /
+ * CityHub). The --city-* values are page-scope tokens the prototypes define on
+ * top of the design system: the orange CTA is intentionally NOT --ar-color-primary.
+ */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #f5f7fa;
+}
+
+a:not([class]) {
+  color: var(--ar-color-primary);
+  text-decoration: none;
+}
+
+a:not([class]):hover {
+  color: var(--ar-color-primary-hover);
+  text-decoration: underline;
+}
+
+:root {
+  --ar-color-bg: #f5f7fa;
+  --city-cta: #d9511c;
+  --city-cta-hover: #bc4315;
+  --city-navy-2: #06213f;
+  --city-sky: #93c5f6;
+}
+
+/* The blog templates run on a white page instead of the landing grey. */
+body[data-surface='blog'] {
+  background: #ffffff;
+}

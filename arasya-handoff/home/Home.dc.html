@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Homepage (Beranda)" description="Halaman beranda / — dwibahasa ID/EN (toggle navbar, default bahasa browser). Hero brand, kepercayaan, armada & tarif, layanan, direktori kota, testimoni, verifikasi resmi + rekening. Seluruh konten dari registry global + i18n.js." -->
+<helmet>
+  <script src="./ds-base.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <title>Arasya Rent Car — Sewa Mobil Premium dengan Supir</title>
+  <meta name="description" content="Sewa mobil premium dengan supir profesional dari PT. Ayomi Raya. Tarif transparan, pembayaran ke rekening resmi, pesan via WhatsApp."/>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: #f5f7fa; }
+    a:not([class]) { color: var(--ar-color-primary); text-decoration: none; }
+    a:not([class]):hover { color: var(--ar-color-primary-hover); text-decoration: underline; }
+    :root { --ar-color-bg: #f5f7fa; --city-cta: #d9511c; --city-cta-hover: #bc4315; --city-navy-2: #06213f; --city-sky: #93c5f6; }
+    .site-nav-links { display: flex; align-items: center; gap: clamp(10px, 2vw, 22px); }
+    .site-nav-burger { position: relative; display: none; }
+    .site-nav-burger summary { list-style: none; }
+    .site-nav-burger summary::-webkit-details-marker { display: none; }
+    .site-nav-drop { position: relative; }
+    .site-nav-drop summary { list-style: none; }
+    .site-nav-drop summary::-webkit-details-marker { display: none; }
+    .site-lang { display: flex; }
+    @media (max-width: 899px) { .site-nav-links { display: none; } .site-nav-burger { display: block; } }
+    @media (max-width: 479px) { .site-lang { display: none; } }
+  </style>
+</helmet>
+<x-import component-from-global-scope="ArasyaDS.ArasyaProvider" hint-size="100%,5200px">
+  <div style="min-height: 100vh; background: var(--ar-color-bg); display: flex; flex-direction: column;">
+
+    <header data-screen-label="Header" style="position: sticky; top: 0; z-index: 30; background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--ar-color-border);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: 10px clamp(20px, 4vw, 32px); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <img src="../city-landing/assets/brand/logo-arasya.webp" alt="Arasya Rent Car" style="height: clamp(26px, 6vw, 32px); width: auto; display: block;"/>
+        <nav style="display: flex; align-items: center; gap: clamp(10px, 2.4vw, 14px);">
+          <div class="site-nav-links">
+            <a href="#armada" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">{{ t.navArmada }}</a>
+            <a href="#layanan" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">{{ t.navLayanan }}</a>
+            <a href="#testimoni" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">{{ t.navTestimoni }}</a>
+            <details class="site-nav-drop">
+              <summary style="display: inline-flex; align-items: center; gap: 5px; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); cursor: pointer;">{{ t.navKota }}<span style="font-size: 8px; line-height: 1;">▼</span></summary>
+              <div style="position: absolute; left: 50%; transform: translateX(-50%); top: calc(100% + 14px); min-width: 250px; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); box-shadow: var(--ar-shadow-lg); padding: 8px; display: flex; flex-direction: column; gap: 2px; z-index: 50;">
+                <sc-for list="{{ cityCards }}" as="nc" hint-placeholder-count="4">
+                  <a href="/{{ nc.slug }}" onClick="{{ nc.onOpen }}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);"><span>{{ nc.navLabel }}</span><span style="font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; color: var(--ar-color-text-muted);">{{ nc.code }}</span></a>
+                </sc-for>
+                <a href="/sewa-mobil" onClick="{{ onOpenHub }}" style="display: block; padding: 10px 12px; margin-top: 2px; border-top: 1px solid var(--ar-color-border); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary); text-decoration: none;" style-hover="color: var(--ar-color-primary-hover);">{{ t.navAllCities }}</a>
+              </div>
+            </details>
+            <a href="/travel" onClick="{{ onOpenTravel }}" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">{{ t.navTravel }}</a>
+            <a href="/blog" onClick="{{ onOpenBlog }}" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text-secondary); text-decoration: none;">{{ t.navBlog }}</a>
+          </div>
+          <div class="site-lang" style="align-items: center; gap: 2px; border: 1px solid var(--ar-color-border); border-radius: 999px; padding: 2px; background: #ffffff;">
+            <button type="button" onClick="{{ setLangId }}" aria-label="Bahasa Indonesia" style="border: none; cursor: pointer; font-family: inherit; min-height: 26px; padding: 0 10px; border-radius: 999px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-bold); letter-spacing: 0.04em; background: {{ langIdBg }}; color: {{ langIdColor }};">ID</button>
+            <button type="button" onClick="{{ setLangEn }}" aria-label="English" style="border: none; cursor: pointer; font-family: inherit; min-height: 26px; padding: 0 10px; border-radius: 999px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-bold); letter-spacing: 0.04em; background: {{ langEnBg }}; color: {{ langEnColor }};">EN</button>
+          </div>
+          <a href="{{ waNav }}" target="_blank" rel="noopener noreferrer" data-cta="home-nav-wa" style="display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 clamp(12px, 2.4vw, 18px); border-radius: var(--ar-radius-md); background: var(--city-cta); color: #ffffff; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); text-decoration: none; white-space: nowrap; transition: background var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--city-cta-hover);">{{ t.cta }}</a>
+          <details class="site-nav-burger">
+            <summary aria-label="Buka menu navigasi" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-md); background: #ffffff; cursor: pointer;">
+              <span style="display: flex; flex-direction: column; gap: 4px;"><span style="width: 18px; height: 2px; border-radius: 2px; background: var(--ar-color-text);"></span><span style="width: 18px; height: 2px; border-radius: 2px; background: var(--ar-color-text);"></span><span style="width: 18px; height: 2px; border-radius: 2px; background: var(--ar-color-text);"></span></span>
+            </summary>
+            <div style="position: absolute; right: 0; top: calc(100% + 10px); min-width: 230px; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); box-shadow: var(--ar-shadow-lg); padding: 8px; display: flex; flex-direction: column; gap: 2px; z-index: 50;">
+              <div style="display: flex; gap: 4px; padding: 4px 4px 8px;">
+                <button type="button" onClick="{{ setLangId }}" style="flex: 1; border: 1px solid var(--ar-color-border); cursor: pointer; font-family: inherit; min-height: 32px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-bold); background: {{ langIdBg }}; color: {{ langIdColor }};">ID — Indonesia</button>
+                <button type="button" onClick="{{ setLangEn }}" style="flex: 1; border: 1px solid var(--ar-color-border); cursor: pointer; font-family: inherit; min-height: 32px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-bold); background: {{ langEnBg }}; color: {{ langEnColor }};">EN — English</button>
+              </div>
+              <a href="#armada" onClick="{{ closeMenu }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">{{ t.navArmada }}</a>
+              <a href="#layanan" onClick="{{ closeMenu }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">{{ t.navLayanan }}</a>
+              <a href="#testimoni" onClick="{{ closeMenu }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">{{ t.navTestimoni }}</a>
+              <a href="/travel" onClick="{{ onOpenTravel }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">{{ t.navTravel }}</a>
+              <a href="/blog" onClick="{{ onOpenBlog }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">{{ t.navBlog }}</a>
+              <div style="margin: 6px 4px; border-top: 1px solid var(--ar-color-border);"></div>
+              <span style="padding: 2px 12px 4px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-color-text-muted);">{{ t.navKota }}</span>
+              <sc-for list="{{ cityCards }}" as="nc" hint-placeholder-count="3">
+                <a href="/{{ nc.slug }}" onClick="{{ nc.onOpen }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-medium); color: var(--ar-color-text); text-decoration: none;" style-hover="background: var(--ar-blue-50); color: var(--ar-color-primary);">{{ nc.navLabel }}</a>
+              </sc-for>
+              <a href="/sewa-mobil" onClick="{{ onOpenHub }}" style="display: block; padding: 10px 12px; border-radius: var(--ar-radius-md); font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary); text-decoration: none;" style-hover="background: var(--ar-blue-50);">{{ t.navAllCities }}</a>
+            </div>
+          </details>
+        </nav>
+      </div>
+    </header>
+
+    <section data-screen-label="Hero" style="background: linear-gradient(165deg, rgba(2, 16, 33, 0.86) 0%, rgba(6, 33, 63, 0.78) 55%, rgba(4, 43, 84, 0.72) 100%), url('../city-landing/assets/images/bogor/hero-bogor.webp') center / cover no-repeat; color: #ffffff;">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(72px, 12vh, 140px) clamp(20px, 4vw, 32px) clamp(56px, 8vh, 84px);">
+        <span data-hero="1" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(147,197,246,0.14); border: 1px solid rgba(147,197,246,0.35); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--city-sky);">{{ t.heroBadge }}</span>
+        <h1 data-hero="1" style="margin: 18px 0 0; max-width: 760px; font-size: clamp(34px, 5.8vw, 62px); line-height: 1.06; letter-spacing: -0.02em; font-weight: var(--ar-weight-bold); color: #ffffff; text-wrap: balance;">{{ t.heroTitle }}</h1>
+        <p data-hero="1" style="margin: 18px 0 0; max-width: 620px; font-size: clamp(1rem, 1.4vw, 1.125rem); line-height: 1.65; color: var(--ar-blue-100); text-wrap: pretty;">{{ t.heroSub }}</p>
+        <div data-hero="1" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px;">
+          <a href="{{ waHero }}" target="_blank" rel="noopener noreferrer" data-cta="home-hero-wa" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 26px; border-radius: var(--ar-radius-md); background: var(--ar-color-whatsapp); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; box-shadow: 0 8px 24px rgba(18,140,80,0.35); transition: background var(--ar-duration-fast) var(--ar-ease), transform var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--ar-color-whatsapp-hover); transform: translateY(-1px);">{{ waIconSm }}{{ t.heroWa }}</a>
+          <a href="/sewa-mobil" onClick="{{ onOpenHub }}" data-cta="home-hero-kota" style="display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 24px; border-radius: var(--ar-radius-md); background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.32); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; transition: background var(--ar-duration-fast) var(--ar-ease), transform var(--ar-duration-fast) var(--ar-ease);" style-hover="background: rgba(255,255,255,0.18); transform: translateY(-1px);">{{ t.heroKota }}</a>
+        </div>
+        <div data-hero="1" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px;">
+          <span style="display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); font-size: var(--ar-text-sm); color: #ffffff;"><span style="width: 5px; height: 5px; border-radius: 999px; background: var(--city-sky); flex: 0 0 auto;"></span>{{ fleetChip }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); font-size: var(--ar-text-sm); color: #ffffff;"><span style="width: 5px; height: 5px; border-radius: 999px; background: var(--city-sky); flex: 0 0 auto;"></span>{{ t.chipTarif }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); font-size: var(--ar-text-sm); color: #ffffff;"><span style="width: 5px; height: 5px; border-radius: 999px; background: var(--city-sky); flex: 0 0 auto;"></span>{{ t.chipSupport }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section data-screen-label="Kepercayaan" style="background: #ffffff; border-bottom: 1px solid var(--ar-color-border);">
+      <div class="ar-reveal" style="max-width: 1160px; margin: 0 auto; padding: clamp(32px, 5vw, 52px) clamp(20px, 4vw, 32px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: clamp(18px, 3vw, 28px);">
+        <sc-for list="{{ trustCards }}" as="tc" hint-placeholder-count="4">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--ar-radius-md); background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); color: var(--ar-color-primary); display: flex; align-items: center; justify-content: center;">{{ tc.icon }}</div>
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <h3 style="margin: 0; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">{{ tc.title }}</h3>
+              <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">{{ tc.description }}</p>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section id="armada" data-screen-label="Armada" style="background: var(--ar-color-bg);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 88px) clamp(20px, 4vw, 32px);">
+        <div class="ar-reveal" style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px;">
+          <x-import component-from-global-scope="ArasyaDS.SectionHeading" eyebrow="{{ t.armadaEyebrow }}" title="{{ t.armadaTitle }}" subtitle="{{ t.armadaSub }}" hint-size="min(100%,560px),110px"></x-import>
+          <a href="/sewa-mobil" onClick="{{ onOpenHub }}" data-cta="home-armada-hub" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary); text-decoration: none;">{{ t.armadaAll }}</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 24px;">
+          <sc-for list="{{ fleetCards }}" as="f" hint-placeholder-count="6">
+            <div class="ar-reveal" style="display: flex; flex-direction: column; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); overflow: hidden; transition: box-shadow var(--ar-duration-normal) var(--ar-ease), transform var(--ar-duration-normal) var(--ar-ease);" style-hover="box-shadow: var(--ar-shadow-lg); transform: translateY(-3px);">
+              <div style="position: relative; aspect-ratio: 3 / 2; background: linear-gradient(180deg, #f2f6fb 0%, #e8eef6 100%); overflow: hidden;">
+                <sc-if value="{{ f.isPhoto }}" hint-placeholder-val="{{ true }}"><img src="{{ f.img }}" alt="{{ f.name }}" loading="lazy" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;"/></sc-if>
+                <sc-if value="{{ f.isCutout }}" hint-placeholder-val="{{ false }}"><img src="{{ f.img }}" alt="{{ f.name }}" loading="lazy" decoding="async" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 14px; box-sizing: border-box; display: block;"/></sc-if>
+                <sc-if value="{{ f.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; background: var(--ar-gold-100); border: 1px solid var(--ar-gold-300); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); color: var(--ar-gold-700);">{{ f.badge }}</span></sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px; padding: var(--ar-space-4) var(--ar-space-5) var(--ar-space-5);">
+                <h3 style="margin: 0; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); color: var(--ar-color-text);">{{ f.name }}</h3>
+                <p style="margin: 0; font-size: var(--ar-text-xs); color: var(--ar-color-text-muted);">{{ f.capacity }}</p>
+                <p style="margin: 6px 0 0; font-size: var(--ar-text-md); font-weight: var(--ar-weight-bold); color: var(--ar-color-primary);">{{ f.price }}</p>
+                <p style="margin: 0; font-size: var(--ar-text-xs); color: var(--ar-color-text-secondary);">{{ f.priceSub }}</p>
+                <a href="{{ f.waHref }}" target="_blank" rel="noopener noreferrer" data-cta="home-armada-wa" data-unit="{{ f.slug }}" style="margin-top: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: var(--ar-radius-md); border: 1px solid var(--ar-color-whatsapp); color: var(--ar-color-whatsapp-hover, #0e7a46); background: #ffffff; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); text-decoration: none; transition: background var(--ar-duration-fast) var(--ar-ease), color var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--ar-color-whatsapp); color: #ffffff;">{{ waIconXs }}{{ t.orderUnit }}</a>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="ar-reveal" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px;">
+          <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-color-text-muted); max-width: 640px; text-wrap: pretty;">{{ fleetNote }}</p>
+          <sc-if value="{{ hasMoreFleet }}" hint-placeholder-val="{{ true }}"><a href="/sewa-mobil" onClick="{{ onOpenHub }}" data-cta="home-armada-more" style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary); text-decoration: none;">{{ moreFleetLabel }}</a></sc-if>
+        </div>
+      </div>
+    </section>
+
+    <section id="layanan" data-screen-label="Layanan" style="background: #ffffff; border-top: 1px solid var(--ar-color-border); border-bottom: 1px solid var(--ar-color-border);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 88px) clamp(20px, 4vw, 32px);">
+        <div class="ar-reveal">
+          <x-import component-from-global-scope="ArasyaDS.SectionHeading" eyebrow="{{ t.layananEyebrow }}" title="{{ t.layananTitle }}" subtitle="{{ t.layananSub }}" hint-size="min(100%,560px),110px"></x-import>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 24px;">
+          <sc-for list="{{ services }}" as="sv" hint-placeholder-count="6">
+            <a class="ar-reveal" href="{{ sv.waHref }}" target="_blank" rel="noopener noreferrer" data-cta="home-layanan" style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); padding: var(--ar-space-5); text-decoration: none; transition: box-shadow var(--ar-duration-normal) var(--ar-ease), transform var(--ar-duration-normal) var(--ar-ease), border-color var(--ar-duration-normal) var(--ar-ease);" style-hover="box-shadow: var(--ar-shadow-lg); transform: translateY(-3px); border-color: var(--ar-color-border-strong);">
+              <div style="width: 42px; height: 42px; border-radius: var(--ar-radius-md); background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); color: var(--ar-color-primary); display: flex; align-items: center; justify-content: center;">{{ sv.icon }}</div>
+              <h3 style="margin: 2px 0 0; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); color: var(--ar-color-text);">{{ sv.title }}</h3>
+              <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">{{ sv.description }}</p>
+              <span style="margin-top: auto; padding-top: 4px; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary);">{{ t.layananAsk }}</span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section id="kota" data-screen-label="Kota Layanan" style="background: var(--ar-color-bg);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 88px) clamp(20px, 4vw, 32px);">
+        <div class="ar-reveal">
+          <x-import component-from-global-scope="ArasyaDS.SectionHeading" eyebrow="{{ t.kotaEyebrow }}" title="{{ t.kotaTitle }}" subtitle="{{ t.kotaSub }}" hint-size="min(100%,560px),110px"></x-import>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 24px;">
+          <sc-for list="{{ cityCards }}" as="ct" hint-placeholder-count="4">
+            <a class="ar-reveal" href="/{{ ct.slug }}" onClick="{{ ct.onOpen }}" data-cta="home-kota" data-city="{{ ct.code }}" style="display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); padding: var(--ar-space-5); text-decoration: none; transition: box-shadow var(--ar-duration-normal) var(--ar-ease), transform var(--ar-duration-normal) var(--ar-ease), border-color var(--ar-duration-normal) var(--ar-ease);" style-hover="box-shadow: var(--ar-shadow-lg); transform: translateY(-3px); border-color: var(--ar-color-border-strong);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span style="display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; background: var(--ar-blue-50); border: 1px solid var(--ar-blue-100); font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ar-blue-700);">{{ ct.typeLabel }}</span>
+                <span style="font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.1em; color: var(--ar-color-text-muted);">{{ ct.code }}</span>
+              </div>
+              <h3 style="margin: 4px 0 0; font-size: var(--ar-text-lg); font-weight: var(--ar-weight-semibold); color: var(--ar-color-text);">{{ ct.navLabel }}</h3>
+              <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">{{ ct.servingLine }}</p>
+              <span style="margin-top: auto; padding-top: 6px; font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary);">{{ t.seeTariff }}</span>
+            </a>
+          </sc-for>
+          <a class="ar-reveal" href="/sewa-mobil" onClick="{{ onOpenHub }}" data-cta="home-kota-semua" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; background: transparent; border: 2px dashed var(--ar-color-border-strong); border-radius: var(--ar-radius-lg); padding: var(--ar-space-5); text-decoration: none; transition: border-color var(--ar-duration-normal) var(--ar-ease), background var(--ar-duration-normal) var(--ar-ease);" style-hover="border-color: var(--ar-color-primary); background: rgba(4,107,210,0.04);">
+            <h3 style="margin: 0; font-size: var(--ar-text-lg); font-weight: var(--ar-weight-semibold); color: var(--ar-color-text);">{{ t.allCitiesTitle }}</h3>
+            <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.6; color: var(--ar-color-text-secondary); text-wrap: pretty;">{{ t.allCitiesDesc }}</p>
+            <span style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-semibold); color: var(--ar-color-primary);">{{ t.allCitiesLink }}</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="testimoni" data-screen-label="Testimoni" style="background: #ffffff; border-top: 1px solid var(--ar-color-border);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 88px) clamp(20px, 4vw, 32px);">
+        <div class="ar-reveal">
+          <x-import component-from-global-scope="ArasyaDS.SectionHeading" eyebrow="{{ t.testiEyebrow }}" title="{{ t.testiTitle }}" subtitle="{{ t.testiSub }}" hint-size="min(100%,560px),110px"></x-import>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 16px; margin-top: 24px;">
+          <sc-for list="{{ testimonials }}" as="tm" hint-placeholder-count="3">
+            <figure class="ar-reveal" style="margin: 0; background: #ffffff; border: 1px solid var(--ar-color-border); border-radius: var(--ar-radius-lg); padding: var(--ar-space-5); display: flex; flex-direction: column; gap: 14px;">
+              <blockquote style="margin: 0; font-size: var(--ar-text-md); line-height: 1.7; color: var(--ar-color-text); text-wrap: pretty;">“{{ tm.quote }}”</blockquote>
+              <figcaption style="display: flex; flex-direction: column; gap: 2px; margin-top: auto;">
+                <span style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); color: var(--ar-color-text);">{{ tm.name }}</span>
+                <span style="font-size: var(--ar-text-xs); color: var(--ar-color-text-muted);">{{ tm.context }}</span>
+                <sc-if value="{{ tm.link }}" hint-placeholder-val="{{ false }}">
+                  <a href="{{ tm.link }}" target="_blank" rel="noopener noreferrer" style="margin-top: 6px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-medium); color: var(--ar-color-primary); text-decoration: none;">Lihat ulasan di Google ↗</a>
+                </sc-if>
+              </figcaption>
+            </figure>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section data-screen-label="Verifikasi Resmi" style="background: linear-gradient(165deg, var(--ar-blue-950) 0%, var(--city-navy-2) 60%, var(--ar-blue-900) 100%); color: #ffffff;">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(56px, 8vw, 96px) clamp(20px, 4vw, 32px); display: flex; flex-wrap: wrap; gap: clamp(24px, 4vw, 56px);">
+        <div class="ar-reveal" style="flex: 1.3 1 320px; min-width: min(100%, 320px); display: flex; flex-direction: column; gap: 16px;">
+          <p style="margin: 0; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.1em; text-transform: uppercase; color: var(--city-sky);">{{ t.verifEyebrow }}</p>
+          <h2 style="margin: 0; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.15; letter-spacing: -0.01em; font-weight: var(--ar-weight-bold); color: #ffffff; text-wrap: balance;">{{ t.verifTitle }}</h2>
+          <p style="margin: 0; font-size: var(--ar-text-md); line-height: 1.75; color: var(--ar-blue-200); text-wrap: pretty;">{{ t.verifDesc }}</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <p style="margin: 0; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-blue-400);">{{ t.verifNumbers }}</p>
+            <p style="margin: 0; font-size: var(--ar-text-md); font-weight: var(--ar-weight-bold); color: #ffffff;">{{ phonesDisplay }}</p>
+            <p style="margin: 0; font-size: var(--ar-text-xs); color: var(--ar-blue-200);">{{ t.verifHours }}</p>
+          </div>
+          <a href="{{ waConsult }}" target="_blank" rel="noopener noreferrer" data-cta="home-verif-wa" style="align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 24px; border-radius: var(--ar-radius-md); background: var(--ar-color-whatsapp); color: #ffffff; font-size: var(--ar-text-md); font-weight: var(--ar-weight-semibold); text-decoration: none; transition: background var(--ar-duration-fast) var(--ar-ease);" style-hover="background: var(--ar-color-whatsapp-hover);">{{ waIconSm }}{{ t.verifWa }}</a>
+        </div>
+        <div class="ar-reveal" style="flex: 1 1 300px; min-width: min(100%, 300px); display: flex; flex-direction: column; gap: 12px;">
+          <p style="margin: 0; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-blue-400);">{{ t.bankLabel }}</p>
+          <sc-for list="{{ bankAccounts }}" as="bk" hint-placeholder-count="1">
+            <div style="border-radius: 14px; background: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05)); border: 1px solid rgba(147,197,246,0.3); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <span style="font-size: var(--ar-text-sm); font-weight: var(--ar-weight-bold); letter-spacing: 0.06em; color: #ffffff;">{{ bk.bank }}</span>
+                <button type="button" onClick="{{ bk.onCopy }}" style="border: 1px solid rgba(255,255,255,0.35); background: transparent; color: #ffffff; font-family: inherit; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); padding: 4px 10px; border-radius: 999px; cursor: pointer; transition: background var(--ar-duration-fast) var(--ar-ease);" style-hover="background: rgba(255,255,255,0.14);">{{ bk.copyLabel }}</button>
+              </div>
+              <span style="font-size: clamp(20px, 2.4vw, 24px); font-weight: var(--ar-weight-bold); letter-spacing: 0.06em; color: #ffffff; font-variant-numeric: tabular-nums;">{{ bk.number }}</span>
+              <span style="font-size: var(--ar-text-xs); color: var(--ar-blue-200);">{{ bk.owner }}</span>
+            </div>
+          </sc-for>
+          <p style="margin: 0; font-size: var(--ar-text-xs); line-height: 1.6; color: var(--ar-blue-300, var(--ar-blue-200)); text-wrap: pretty;">{{ t.bankNote }}</p>
+        </div>
+      </div>
+    </section>
+
+    <footer data-screen-label="Footer" style="background: var(--ar-blue-950); color: var(--ar-blue-200); border-top: 1px solid rgba(147,197,246,0.14);">
+      <div style="max-width: 1160px; margin: 0 auto; padding: clamp(44px, 6vw, 64px) clamp(20px, 4vw, 32px); display: flex; flex-wrap: wrap; gap: clamp(28px, 4vw, 64px);">
+        <div style="flex: 1.4 1 280px; min-width: min(100%, 280px); display: flex; flex-direction: column; gap: 12px;">
+          <img src="../city-landing/assets/brand/logo-arasya.webp" alt="Arasya Rent Car" style="height: 32px; width: auto; display: block; align-self: flex-start; filter: invert(1) brightness(1.6);"/>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7; max-width: 380px;">{{ t.footTagline }}</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7;">{{ addressLine }}</p>
+        </div>
+        <div style="flex: 1 1 220px; min-width: min(100%, 220px); display: flex; flex-direction: column; gap: 8px;">
+          <p style="margin: 0 0 4px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-blue-400);">{{ t.footContact }}</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm); line-height: 1.7;">{{ phonesDisplay }}</p>
+          <p style="margin: 0; font-size: var(--ar-text-sm);">Instagram: <a href="{{ instagram }}" target="_blank" rel="noopener" style="color: var(--city-sky); text-decoration: none;">@arasyarentcar</a></p>
+        </div>
+        <div style="flex: 1 1 220px; min-width: min(100%, 220px); display: flex; flex-direction: column; gap: 8px;">
+          <p style="margin: 0 0 4px; font-size: var(--ar-text-xs); font-weight: var(--ar-weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ar-blue-400);">{{ t.footExplore }}</p>
+          <a href="/sewa-mobil" onClick="{{ onOpenHub }}" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">{{ t.allCitiesTitle }}</a>
+          <a href="/blog" onClick="{{ onOpenBlog }}" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">Blog Arasya</a>
+          <a href="/travel" onClick="{{ onOpenTravel }}" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">Arasya Travel</a>
+          <a href="#armada" style="font-size: var(--ar-text-sm); color: var(--city-sky); text-decoration: none;">{{ t.footArmada }}</a>
+        </div>
+        <p style="margin: 0; flex: 1 1 100%; padding-top: 18px; border-top: 1px solid rgba(147,197,246,0.18); font-size: var(--ar-text-xs); color: var(--ar-blue-400);">© 2026 PT. Ayomi Raya — Arasya Rent Car. {{ t.footRights }}</p>
+      </div>
+    </footer>
+
+  </div>
+  <sc-if value="{{ showFab }}" hint-placeholder-val="{{ true }}">
+    <a id="wa-fab" href="{{ waFab }}" target="_blank" rel="noopener noreferrer" aria-label="Chat WhatsApp Arasya Rent Car" data-cta="home-fab-wa" style="position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 40; width: 58px; height: 58px; border-radius: 999px; background: var(--ar-color-whatsapp); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 28px rgba(37,211,102,0.4), 0 2px 8px rgba(1,24,48,0.2); transition: transform var(--ar-duration-fast) var(--ar-ease), background var(--ar-duration-fast) var(--ar-ease);" style-hover="transform: scale(1.06); background: var(--ar-color-whatsapp-hover);">{{ waIconLg }}</a>
+  </sc-if>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;phone&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;6282124024281&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Kontak&quot; },
+  &quot;fleetCount&quot;: { &quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 6, &quot;min&quot;: 3, &quot;max&quot;: 14, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Armada&quot; },
+  &quot;floatingWa&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Layout&quot; }
+}">
+class Component extends DCLogic {
+  state = { dsReady: !!window.ArasyaDS, cities: null, shared: null, anims: null, i18n: null, lang: 'id', copied: null };
+
+  componentDidMount() {
+    Promise.all([import('../city-landing/cities.js'), import('../city-landing/shared.js'), import('../city-landing/anims.js'), import('../city-landing/i18n.js')]).then(([c, s, a, i]) => {
+      const lang = i.resolveLang();
+      document.documentElement.lang = lang;
+      this.setState({ cities: c.cities, shared: s, anims: a, i18n: i, lang }, () => {
+        this.applySeo();
+        a.startAnims(this);
+      });
+    });
+    if (!this.state.dsReady) {
+      this._poll = setInterval(() => {
+        if (window.ArasyaDS) { clearInterval(this._poll); this.setState({ dsReady: true }); }
+      }, 100);
+    }
+  }
+
+  componentDidUpdate() { if (this.state.anims) this.state.anims.revealNew(this); }
+
+  componentWillUnmount() {
+    if (this._poll) clearInterval(this._poll);
+    if (this.state.anims) this.state.anims.stopAnims(this);
+  }
+
+  t() {
+    const i = this.state.i18n;
+    return i ? i.STR[this.state.lang] || i.STR.id : {};
+  }
+
+  switchLang(l) {
+    if (l === this.state.lang) return;
+    if (this.state.i18n) this.state.i18n.setLang(l);
+    document.documentElement.lang = l;
+    this.setState({ lang: l }, () => this.applySeo());
+  }
+
+  phone() { return this.props.phone ?? ((this.state.shared && this.state.shared.OFFICIAL.waPrimary) || '6282124024281'); }
+
+  entries() {
+    const reg = this.state.cities || {};
+    return Object.entries(reg).map(([key, v]) => Object.assign({ key }, v));
+  }
+
+  wa(message, ref) {
+    const text = message + (ref ? ' [Ref: ' + ref + ']' : '');
+    const s = this.state.shared;
+    if (s) return s.waHref(this.phone(), text);
+    const digits = String(this.phone()).replace(/\D/g, '');
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
+  }
+
+  previewFile(t) {
+    return {
+      city: '../city-landing/CityLanding.dc.html',
+      region: '../region-landing/RegionLanding.dc.html',
+      country: '../country-landing/CountryLanding.dc.html',
+    }[t] || '../city-landing/CityLanding.dc.html';
+  }
+
+  copy(key, digits) {
+    const done = () => {
+      this.setState({ copied: key });
+      clearTimeout(this._copyT);
+      this._copyT = setTimeout(() => this.setState({ copied: null }), 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(digits).then(done).catch(done);
+    else done();
+  }
+
+  applySeo() {
+    const s = this.state.shared;
+    if (!s) return;
+    const T = this.t();
+    const en = this.state.lang === 'en';
+    const list = this.entries();
+    document.title = T.seoTitle;
+    const names = list.map((e) => e.name);
+    const joiner = en ? ', and ' : ', dan ';
+    const nameList = names.length > 1 ? names.slice(0, -1).join(', ') + joiner + names[names.length - 1] : names.join('');
+    const desc = T.seoDescPre + (nameList || T.seoAreaFallback) + T.seoDescPost;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', desc);
+    const base = s.OFFICIAL.siteUrl || 'https://arasyarentcar.com';
+    const pageUrl = en ? base + '/en/' : base + '/';
+    document.querySelectorAll('[data-seo-extra]').forEach((el) => el.remove());
+    const add = (tag, attrs) => { const el = document.createElement(tag); for (const k in attrs) if (attrs[k] != null) el.setAttribute(k, attrs[k]); el.setAttribute('data-seo-extra', '1'); document.head.appendChild(el); };
+    add('link', { rel: 'canonical', href: pageUrl });
+    add('link', { rel: 'alternate', hreflang: 'id', href: base + '/' });
+    add('link', { rel: 'alternate', hreflang: 'en', href: base + '/en/' });
+    add('link', { rel: 'alternate', hreflang: 'x-default', href: base + '/' });
+    [['og:type', 'website'], ['og:locale', en ? 'en_US' : 'id_ID'], ['og:site_name', 'Arasya Rent Car'], ['og:title', document.title], ['og:description', desc], ['og:url', pageUrl]].forEach(([k, v]) => add('meta', { property: k, content: v }));
+    add('meta', { name: 'twitter:card', content: 'summary' });
+    const old = document.getElementById('seo-jsonld');
+    if (old) old.remove();
+    const digits = String(this.phone()).replace(/\D/g, '');
+    const data = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'AutoRental',
+          name: 'Arasya Rent Car',
+          legalName: 'PT. Ayomi Raya',
+          url: pageUrl,
+          priceRange: s.fleetPriceRange ? s.fleetPriceRange() : undefined,
+          description: desc,
+          telephone: '+' + digits,
+          address: { '@type': 'PostalAddress', streetAddress: s.OFFICIAL.addressStreet, addressLocality: s.OFFICIAL.addressLocality, postalCode: s.OFFICIAL.postalCode, addressCountry: 'ID' },
+          sameAs: [s.OFFICIAL.instagram],
+          areaServed: Array.from(new Set(list.flatMap((e) => e.areaServed || []))),
+        },
+        { '@type': 'WebSite', name: 'Arasya Rent Car', url: pageUrl, inLanguage: en ? 'en' : 'id' },
+      ],
+    };
+    const el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = 'seo-jsonld';
+    el.textContent = JSON.stringify(data);
+    document.head.appendChild(el);
+  }
+
+  waIcon(size) {
+    return React.createElement(
+      'svg',
+      { key: 'wa' + size, width: size, height: size, viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': 'true' },
+      React.createElement('path', {
+        d: 'M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.39c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.83 9.83 0 0 0 12.04 2Zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.23 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.17.25-.64.8-.78.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z',
+      })
+    );
+  }
+
+  svcIcon(name, size) {
+    const P = (d) => React.createElement('path', { d, key: d.slice(0, 10) });
+    const C = (cx, cy, r) => React.createElement('circle', { cx, cy, r, key: 'c' + cx + '-' + cy });
+    const kids = {
+      car: [P('M4 16v-3.2c0-.5.1-1 .3-1.4L5.9 8.2A2 2 0 0 1 7.7 7h8.6a2 2 0 0 1 1.8 1.2l1.6 3.2c.2.4.3.9.3 1.4V16'), P('M2.5 16h19'), C(7, 18.5, 1.5), C(17, 18.5, 1.5), P('M6.5 12h11')],
+      plane: [P('M22 2 11 13'), P('M22 2l-7 20-4-9-9-4 20-7z')],
+      route: [P('M5 12h14'), P('M13 6l6 6-6 6')],
+      heart: [P('M12 20.3l-1.2-1.1C5.4 14.4 2 11.3 2 7.9 2 5.2 4.2 3 6.9 3c1.9 0 3.7.9 5.1 2.4C13.4 3.9 15.2 3 17.1 3 19.8 3 22 5.2 22 7.9c0 3.4-3.4 6.5-8.8 11.3L12 20.3z')],
+      building: [P('M4 11l8-7 8 7'), P('M6 9.5V20h12V9.5'), P('M10 20v-6h4v6')],
+      pin: [P('M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z'), C(12, 11, 2.2)],
+      shield: [P('M12 3l7 3v5.2c0 4.3-3 8.2-7 9.3-4-1.1-7-5-7-9.3V6l7-3z'), P('M9 12l2 2 4-4')],
+      check: [P('M20 6L9 17l-5-5')],
+      star: [P('M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z')],
+      phone: [P('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z')],
+      users: [P('M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2'), C(10, 7, 4), P('M23 21v-2a4 4 0 0 0-3-3.87'), P('M16 3.13a4 4 0 0 1 0 7.75')],
+    };
+    return React.createElement(
+      'svg',
+      { key: 'ic-' + name, width: size || 22, height: size || 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
+      kids[name] || kids.car
+    );
+  }
+
+  renderVals() {
+    const s = this.state.shared;
+    const i = this.state.i18n;
+    const T = this.t();
+    const lang = this.state.lang;
+    const en = lang === 'en';
+    const list = this.entries();
+    const typeLabels = { city: T.typeCity, region: T.typeRegion, country: T.typeCountry };
+    const nFleet = Math.max(3, this.props.fleetCount ?? 6);
+    const fleetAll = s ? s.fleet() : [];
+    const fleetCards = fleetAll.slice(0, nFleet).map((f) => {
+      const img = f.imageLogo || f.image;
+      const slug = String(f.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return {
+        name: f.name,
+        slug,
+        img: img || '',
+        isPhoto: !!f.imageLogo,
+        isCutout: !f.imageLogo && !!f.image,
+        capacity: (f.capacity || 7) + T.seatsSuffix,
+        hasBadge: !!f.badge,
+        badge: f.badge || '',
+        price: f.dalamKota != null ? T.fromPrefix + s.formatIdr(f.dalamKota) : T.priceContact,
+        priceSub: f.dalamKota != null ? T.priceSubIn : T.priceContactSub,
+        waHref: this.wa(T.waUnitPre + f.name + T.waUnitPost, 'HOME-armada-' + slug),
+      };
+    });
+    const moreFleet = Math.max(0, fleetAll.length - fleetCards.length);
+    const cityCards = list.map((e) => ({
+      name: e.name, code: e.code, slug: e.slug,
+      navLabel: T.rentPrefix + e.name,
+      servingLine: (T.servingPrefix || '') + e.serviceLine + '.',
+      typeLabel: typeLabels[e.pageType] || T.typeCity,
+      onOpen: (ev) => {
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+        ev.preventDefault();
+        window.location.href = this.previewFile(e.template) + '?city=' + e.key;
+      },
+    }));
+    const previewNav = (href) => (ev) => {
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+      ev.preventDefault();
+      window.location.href = href;
+    };
+    const trustRaw = s ? s.trustItems(null) : [];
+    const servicesRaw = s ? s.SERVICES : [];
+    const active = { bg: 'var(--ar-blue-950)', color: '#ffffff' };
+    const idle = { bg: 'transparent', color: 'var(--ar-color-text-secondary)' };
+    return {
+      t: T,
+      langIdBg: en ? idle.bg : active.bg, langIdColor: en ? idle.color : active.color,
+      langEnBg: en ? active.bg : idle.bg, langEnColor: en ? active.color : idle.color,
+      setLangId: () => this.switchLang('id'),
+      setLangEn: () => this.switchLang('en'),
+      trustCards: (i ? i.localTrust(lang, trustRaw) : trustRaw).map((x) => ({ title: x.title, description: x.description, icon: this.svcIcon(x.preset) })),
+      fleetCards,
+      fleetChip: fleetAll.length ? fleetAll.length + (T.chipFleetSuffix || '') : '',
+      fleetNote: s ? (en && i ? i.FLEET_NOTES_EN.dalamKota : s.FLEET_NOTES.dalamKota) : '',
+      hasMoreFleet: moreFleet > 0,
+      moreFleetLabel: '+' + moreFleet + (T.moreUnitsSuffix || ''),
+      services: (i ? i.localServices(lang, servicesRaw) : servicesRaw).map((x) => ({
+        title: x.title, description: x.description, icon: this.svcIcon(x.icon),
+        waHref: this.wa(T.waServicePre + x.title + T.waServicePost, 'HOME-layanan-' + x.slug),
+      })),
+      cityCards,
+      testimonials: s ? s.TESTIMONIALS : [],
+      phonesDisplay: s ? s.OFFICIAL.phonesDisplay : '',
+      addressLine: s ? s.OFFICIAL.addressLine : '',
+      instagram: s ? s.OFFICIAL.instagram : '#',
+      bankAccounts: (s ? s.OFFICIAL.bankAccounts : []).map((b) => ({
+        bank: b.bank, number: b.number, owner: b.owner,
+        onCopy: () => this.copy(b.key, b.digits),
+        copyLabel: this.state.copied === b.key ? T.bankCopied : T.bankCopy,
+      })),
+      waIconSm: this.waIcon(20),
+      waIconXs: this.waIcon(16),
+      waIconLg: this.waIcon(30),
+      waNav: this.wa(T.waGeneral, 'HOME-nav'),
+      waHero: this.wa(T.waGeneral, 'HOME-hero'),
+      waConsult: this.wa(T.waGeneral, 'HOME-verifikasi'),
+      waFab: this.wa(T.waGeneral, 'HOME-fab'),
+      showFab: this.props.floatingWa ?? true,
+      closeMenu: (ev) => { const d = ev.target.closest('details'); if (d) d.open = false; },
+      onOpenHub: previewNav('../city-hub/CityHub.dc.html'),
+      onOpenBlog: previewNav('../blog-index/BlogIndex.dc.html'),
+      onOpenTravel: previewNav('../travel/Travel.dc.html'),
+    };
+  }
+}
+</script>
+</body>
+</html>
