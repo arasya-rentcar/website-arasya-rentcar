@@ -8,12 +8,13 @@ import { NavAutoClose } from '@/components/layout/NavAutoClose';
 import { OfficialPhones } from '@/components/OfficialPhones';
 import { Reveals } from '@/components/Reveal';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader, type NavItem } from '@/components/layout/SiteHeader';
+import { SiteHeader } from '@/components/layout/SiteHeader';
 import { WaFab } from '@/components/layout/WaFab';
 import { WaLink } from '@/components/WaLink';
 import { CONTAINER, CONTAINER_TIGHT, CTA_WA, EYEBROW_BADGE, GRID_AUTOFIT } from '@/components/sections/styles';
 import { t as tStr } from '@/lib/i18n';
-import { blogHref, cityHref, localeHref } from '@/lib/localize';
+import { cityHref, localeHref } from '@/lib/localize';
+import { siteNav } from '@/lib/nav';
 import { fleet as fleetOf, formatIdr, official as officialOf, slugify, trustItems, waHref } from '@/lib/shared';
 import type { Locale, Location, Site } from '@/types';
 
@@ -60,13 +61,7 @@ export function Home({ locations, site, locale }: HomeProps) {
     country: T.typeCountry,
   };
 
-  const nav: NavItem[] = [
-    { label: T.navArmada, href: '#armada', anchor: true },
-    { label: T.navLayanan, href: '#layanan', anchor: true },
-    { label: T.navKota, href: '#kota', anchor: true },
-    { label: T.navTravel, href: localeHref(locale, 'travel') },
-    { label: T.navBlog, href: blogHref() },
-  ];
+  const nav = siteNav(locale, locations);
 
   return (
     <>
@@ -108,8 +103,14 @@ export function Home({ locations, site, locale }: HomeProps) {
                 <WaGlyph size={20} />
                 {T.heroWa}
               </WaLink>
-              <Link
-                href={localeHref(locale, 'sewa-mobil')}
+              {/* Anchors to the city grid further down this page rather than
+                  navigating to /sewa-mobil. Sending people to the hub made the
+                  hub a toll gate: two clicks and two page loads to reach any
+                  city, when the same six cards are already below the fold here.
+                  The hub keeps its own SEO value and stays reachable from the
+                  nav dropdown's footer — it just stops being compulsory. */}
+              <a
+                href="#kota"
                 data-cta="home-hero-kota"
                 className="cta-ghost"
                 style={{
@@ -129,7 +130,7 @@ export function Home({ locations, site, locale }: HomeProps) {
                 }}
               >
                 {T.heroKota}
-              </Link>
+              </a>
             </div>
             <div data-hero="1" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 26 }}>
               {[T.chipFleetTypes, T.chipTarif, T.chipSupport]

@@ -32,6 +32,7 @@ export function BlogIndex({ posts, locations, site, locale }: BlogIndexProps) {
       <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
         <BlogHeader
           locale={locale}
+          locations={locations}
           waHref={wa(
             en
               ? 'Hello Arasya, I would like to ask about your chauffeured car rental. (ref: blog-index-nav)'

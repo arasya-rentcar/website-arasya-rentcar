@@ -111,6 +111,9 @@ const waDigits = (s) => {
   return d.startsWith('0') ? '62' + d.replace(/^0+/, '') : d;
 };
 const GLOBAL_WA = waDigits(snapshot.site.settings.waPhone);
+// Derived, not hardcoded: adding a seventh service area should extend the
+// expectation automatically rather than fail a magic number.
+const EXPECTED_CITIES = snapshot.locations.length;
 const expectedFor = (path) => {
   const loc = snapshot.locations.find((l) => `/${l.slug}` === path);
   if (loc) return waDigits(loc.waPhone) || GLOBAL_WA;
@@ -214,16 +217,63 @@ await go('/sewa-mobil-bogor');
   const closed = await evalIn(`document.querySelectorAll('#faq details[open]').length`);
   ok(`FAQ item closes again (${after} → ${closed})`, closed === after - 1);
 
-  const navBefore = await evalIn(`!!document.querySelector('header details[open]')`);
-  await evalIn(`document.querySelector('header details summary')?.click(), true`);
+  // Target `.site-nav-burger` explicitly. The header now holds two <details> —
+  // the burger and the desktop "Area Layanan" dropdown — and a bare
+  // `header details` selector matches whichever comes first in the DOM, which
+  // is not the one this is about.
+  const navBefore = await evalIn(`!!document.querySelector('.site-nav-burger[open]')`);
+  await evalIn(`document.querySelector('.site-nav-burger > summary')?.click(), true`);
   await new Promise((r) => setTimeout(r, 350));
-  const navAfter = await evalIn(`!!document.querySelector('header details[open]')`);
+  const navAfter = await evalIn(`!!document.querySelector('.site-nav-burger[open]')`);
   ok('burger menu opens', navAfter && !navBefore);
 
   const linksVisible = await evalIn(
-    `[...document.querySelectorAll('header details a')].filter(a => a.getBoundingClientRect().height > 0).length`
+    `[...document.querySelectorAll('.site-nav-burger a')].filter(a => a.getBoundingClientRect().height > 0).length`
   );
   ok(`burger reveals nav links (${linksVisible})`, linksVisible > 0);
+
+  // Every service area must be reachable from the menu, on every page. That is
+  // the whole point of moving them into the nav: a city used to be two clicks
+  // and two page loads away via the hub, and unreachable from a city page
+  // except through the footer.
+  const areas = JSON.parse(
+    await evalIn(
+      `JSON.stringify([...document.querySelectorAll('.site-nav-burger a')]
+        .map(a => a.getAttribute('href'))
+        .filter(h => h && h !== '/' && !h.startsWith('#')))`
+    )
+  );
+  const cityLinks = areas.filter((h) => /sewa-mobil-/.test(h));
+  ok(`menu links every service area (${cityLinks.length})`, cityLinks.length === EXPECTED_CITIES);
+  ok('menu links the hub', areas.some((h) => /\/sewa-mobil$/.test(h)));
+  ok('menu links travel and blog', areas.some((h) => /travel$/.test(h)) && areas.some((h) => /blog$/.test(h)));
+}
+
+/* ------------------------------------------------- nav identical everywhere */
+
+// The owner's complaint was that the navbar changed from page to page. It is
+// now derived from one function, so this asserts the outcome rather than
+// trusting that nothing re-forks it later.
+//
+// Scoped to `[data-nav="items"]`, which is the navigation proper. The CTA and
+// the ID|EN pill sit outside it and legitimately differ: the blog's WhatsApp
+// button is always visible so it never enters the menu, and the language pill
+// only appears where the page exists in both locales — which today means the
+// home, hub and travel pages, and will mean all of them once the English city
+// content lands.
+console.log('\nnav is identical on every page type');
+{
+  const sig = async (path) => {
+    await go(path);
+    return evalIn(
+      `JSON.stringify([...document.querySelectorAll('.site-nav-burger [data-nav="items"] a')].map(a => a.textContent.trim()))`
+    );
+  };
+  const home = await sig('/');
+  for (const path of ['/sewa-mobil', '/sewa-mobil-bogor', '/sewa-mobil-thailand', '/travel', '/blog', '/blog/itinerari-puncak-satu-hari']) {
+    const other = await sig(path);
+    ok(`${path} matches the home nav`, other === home, `got ${other}`);
+  }
 }
 
 /* ----------------------------------------------------------- hub filter */

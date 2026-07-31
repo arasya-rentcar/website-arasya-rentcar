@@ -25,6 +25,12 @@ export const STR = {
     navTravel: 'Travel',
     navBlog: 'Blog',
     navAllCities: 'Semua Kota Layanan →',
+    // The nav's one dropdown. "Area Layanan" rather than "Kota Layanan" because
+    // half the entries are countries, not cities — Thailand and Malaysia were
+    // already sitting under a heading that called them cities.
+    navArea: 'Area Layanan',
+    navAreaDomestic: 'Dalam Negeri',
+    navAreaOverseas: 'Luar Negeri',
     cta: 'Pesan Sekarang',
     // "Sejak Bogor" was a mistranslation of "From Bogor" — `sejak` is temporal
     // ("since"), never locational. `mancanegara` also sits better than
@@ -116,6 +122,11 @@ export const STR = {
     navTravel: 'Travel',
     navBlog: 'Blog',
     navAllCities: 'All Service Cities →',
+    navArea: 'Service Areas',
+    // "In Indonesia", not "Domestic" — the reader of the English site may well
+    // be outside it, so "domestic" has no fixed meaning for them.
+    navAreaDomestic: 'In Indonesia',
+    navAreaOverseas: 'Overseas',
     cta: 'Book Now',
     heroBadge: 'PT. Ayomi Raya · From Bogor for Indonesia & abroad',
     heroTitle: 'Premium Car Rental with Professional Drivers',

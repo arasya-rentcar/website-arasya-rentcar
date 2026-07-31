@@ -3,13 +3,14 @@ import { Glyph, WaGlyph } from '@/components/icons';
 import { NavAutoClose } from '@/components/layout/NavAutoClose';
 import { Reveals } from '@/components/Reveal';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader, type NavItem } from '@/components/layout/SiteHeader';
+import { SiteHeader } from '@/components/layout/SiteHeader';
 import { WaFab } from '@/components/layout/WaFab';
 import { WaLink } from '@/components/WaLink';
 import { HubDirectory, type HubCard } from '@/components/hub/HubDirectory';
 import { CONTAINER_TIGHT, CTA_PRIMARY, CTA_WA, CHIP_DARK, EYEBROW_BADGE, GRID_AUTOFIT } from '@/components/sections/styles';
 import { tLanding } from '@/lib/i18n';
-import { blogHref, cityHref, localeHref } from '@/lib/localize';
+import { cityHref, localeHref } from '@/lib/localize';
+import { siteNav } from '@/lib/nav';
 import { fleet as fleetOf, formatIdr, official as officialOf, waHref } from '@/lib/shared';
 import type { Locale, Location, Site } from '@/types';
 
@@ -60,12 +61,7 @@ export function Hub({ locations, site, locale }: HubProps) {
     priceLine: l.country === 'ID' ? fleetFrom : '',
   }));
 
-  const nav: NavItem[] = [
-    { label: t.navBeranda, href: localeHref(locale) },
-    { label: en ? 'Service Cities' : 'Kota Layanan', href: '#kota', anchor: true },
-    { label: 'Travel', href: localeHref(locale, 'travel') },
-    { label: 'Blog', href: blogHref() },
-  ];
+  const nav = siteNav(locale, locations);
 
   const wa = (ref: string, msg = WA_GENERAL) => waHref(off.waPrimary, msg, ref);
 

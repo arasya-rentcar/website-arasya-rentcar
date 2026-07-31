@@ -2,7 +2,7 @@ import { AnalyticsBridge } from '@/components/AnalyticsBridge';
 import { NavAutoClose } from '@/components/layout/NavAutoClose';
 import { Reveals } from '@/components/Reveal';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader, type NavItem } from '@/components/layout/SiteHeader';
+import { SiteHeader } from '@/components/layout/SiteHeader';
 import { WaFab } from '@/components/layout/WaFab';
 import { HeroConcierge, HeroDark, HeroDirectory, HeroLight } from '@/components/sections/Hero';
 import { DestinationsSection } from '@/components/sections/DestinationsSection';
@@ -19,7 +19,9 @@ import { StepsSection } from '@/components/sections/StepsSection';
 import { TestimonialsSection } from '@/components/sections/TestimonialsSection';
 import { TrustSection } from '@/components/sections/TrustSection';
 import { tLanding, withCity } from '@/lib/i18n';
-import { blogHref, hasEnLocation, localeHref, localizeLocation, localizeSite } from '@/lib/localize';
+import { hasEnLocation, localeHref, localizeLocation, localizeSite } from '@/lib/localize';
+import { siteNav, type NavLink } from '@/lib/nav';
+import { PageAnchors } from '@/components/layout/PageAnchors';
 import {
   bookingSteps,
   fleet as fleetOf,
@@ -144,14 +146,17 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
   // Two in-page anchors plus the site-wide destinations. Capped at five: the
   // desktop bar appears at 768px and has to fit the logo, the ID|EN pill and the
   // CTA alongside these, so a sixth item overflows at that breakpoint.
-  const nav: NavItem[] = [
-    { label: t.navBeranda, href: localeHref(locale) },
-    isCountry
-      ? { label: t.navKota, href: '#kota', anchor: true }
-      : { label: t.navArmada, href: '#armada', anchor: true },
-    { label: t.navFaq, href: '#faq', anchor: true },
-    { label: t.navTravel, href: localeHref(locale, 'travel') },
-    { label: t.navBlog, href: blogHref() },
+  const nav = siteNav(locale, allLocations);
+
+  // This page's own sections, in the order they appear. Country pages lead with
+  // the city directory — it is the first thing a reader wants there, and it sits
+  // above the fleet — while city pages lead with the fleet.
+  const pageAnchors: NavLink[] = [
+    ...(isCountry ? [{ label: t.navKota, href: '#kota' }] : []),
+    { label: t.navArmada, href: '#armada' },
+    { label: t.layananEyebrow, href: '#layanan' },
+    { label: t.navFaq, href: '#faq' },
+    { label: t.quoteEyebrow, href: '#penawaran' },
   ];
 
   // Only offer the language pill when this entry exists in the other locale.
@@ -218,6 +223,8 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
         ) : (
           <HeroDark {...heroProps} />
         )}
+
+        <PageAnchors items={pageAnchors} order={21} />
 
         {isCountry && (
           <DirectorySection

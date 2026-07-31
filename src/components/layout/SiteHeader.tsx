@@ -2,13 +2,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Locale } from '@/types';
 import { localeHref } from '@/lib/localize';
+import type { NavItem } from '@/lib/nav';
+import { DROP_LINK_STYLE, NavBurger, NavDropdown } from './NavMenus';
 
-export interface NavItem {
-  label: string;
-  href: string;
-  /** In-page anchors close the burger; route links navigate away. */
-  anchor?: boolean;
-}
+export type { NavItem };
 
 interface SiteHeaderProps {
   locale: Locale;
@@ -22,16 +19,6 @@ interface SiteHeaderProps {
 }
 
 const LINK_STYLE = {
-  fontSize: 'var(--ar-text-sm)',
-  fontWeight: 'var(--ar-weight-medium)',
-  color: 'var(--ar-color-text-secondary)',
-  textDecoration: 'none',
-} as const;
-
-const DROP_LINK_STYLE = {
-  display: 'block',
-  padding: '10px 12px',
-  borderRadius: 'var(--ar-radius-md)',
   fontSize: 'var(--ar-text-sm)',
   fontWeight: 'var(--ar-weight-medium)',
   color: 'var(--ar-color-text-secondary)',
@@ -109,11 +96,15 @@ export function SiteHeader({
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 2.4vw, 14px)' }}>
           <div className="site-nav-links">
-            {items.map((it) => (
-              <Link key={it.href + it.label} href={it.href} style={LINK_STYLE}>
-                {it.label}
-              </Link>
-            ))}
+            {items.map((it) =>
+              it.groups?.length ? (
+                <NavDropdown key={it.href + it.label} item={it} linkStyle={LINK_STYLE} />
+              ) : (
+                <Link key={it.href + it.label} href={it.href} style={LINK_STYLE}>
+                  {it.label}
+                </Link>
+              )
+            )}
             {altLocaleHref && <LangPill locale={locale} other={other} href={altLocaleHref} />}
             <a
               href={ctaHref}
@@ -139,79 +130,25 @@ export function SiteHeader({
             </a>
           </div>
 
-          {/* Mobile: same links, collapsed. Native details = zero JS. */}
-          <details className="site-nav-burger">
-            <summary
-              aria-label="Buka menu navigasi"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                border: '1px solid var(--ar-color-border)',
-                borderRadius: 'var(--ar-radius-md)',
-                background: '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              <span className="site-burger-open" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <Bar />
-                <Bar />
-                <Bar />
-              </span>
-              <span className="site-burger-close" aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>
-                ✕
-              </span>
-            </summary>
-            <div
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: 'calc(100% + 10px)',
-                minWidth: 220,
-                background: '#ffffff',
-                border: '1px solid var(--ar-color-border)',
-                borderRadius: 'var(--ar-radius-lg)',
-                boxShadow: 'var(--ar-shadow-lg)',
-                padding: 8,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                zIndex: 40,
-              }}
-            >
-              {items.map((it) => (
-                <Link
-                  key={'m' + it.href + it.label}
-                  href={it.href}
-                  className="js-nav-close"
-                  style={DROP_LINK_STYLE}
-                >
-                  {it.label}
-                </Link>
-              ))}
-              <a href={ctaHref} className="js-nav-close" style={DROP_LINK_STYLE}>
-                {ctaLabel}
-              </a>
-              {altLocaleHref && (
-                <div style={{ padding: '8px 12px 2px' }}>
-                  <LangPill locale={locale} other={other} href={altLocaleHref} />
-                </div>
-              )}
-            </div>
-          </details>
+          <NavBurger
+            items={items}
+            label={locale === 'en' ? 'Open navigation menu' : 'Buka menu navigasi'}
+            footer={
+              <>
+                <a href={ctaHref} className="js-nav-close" style={DROP_LINK_STYLE}>
+                  {ctaLabel}
+                </a>
+                {altLocaleHref && (
+                  <div style={{ padding: '8px 12px 2px' }}>
+                    <LangPill locale={locale} other={other} href={altLocaleHref} />
+                  </div>
+                )}
+              </>
+            }
+          />
         </nav>
       </div>
     </header>
-  );
-}
-
-function Bar() {
-  return (
-    <span
-      style={{ width: 18, height: 2, borderRadius: 2, background: 'var(--ar-color-text)' }}
-    />
   );
 }
 

@@ -4,7 +4,7 @@ import { CheckGlyph, WaGlyph } from '@/components/icons';
 import { NavAutoClose } from '@/components/layout/NavAutoClose';
 import { Reveals } from '@/components/Reveal';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader, type NavItem } from '@/components/layout/SiteHeader';
+import { SiteHeader } from '@/components/layout/SiteHeader';
 import { WaFab } from '@/components/layout/WaFab';
 import { WaLink } from '@/components/WaLink';
 import { RouteTabs } from '@/components/travel/RouteTabs';
@@ -12,13 +12,17 @@ import { TariffChecker } from '@/components/travel/TariffChecker';
 import { StepsSection } from '@/components/sections/StepsSection';
 import { CONTAINER, CHIP_DARK, CTA_WA, EYEBROW_BADGE } from '@/components/sections/styles';
 import { fillBank, tTravel } from '@/lib/i18n';
-import { blogHref, localeHref } from '@/lib/localize';
+import { localeHref } from '@/lib/localize';
 import { official as officialOf, waHref } from '@/lib/shared';
-import type { Locale, Site, Travel as TravelData } from '@/types';
+import type { Locale, Location, Site, Travel as TravelData } from '@/types';
+import { siteNav } from '@/lib/nav';
+import { PageAnchors } from '@/components/layout/PageAnchors';
 
 interface TravelProps {
   travel: TravelData;
   site: Site;
+  /** Every published entry — the header's "Area Layanan" menu lists them. */
+  locations: Location[];
   locale: Locale;
 }
 
@@ -29,7 +33,7 @@ interface TravelProps {
  * destination, at a fixed all-in rate. Fully bilingual, since `travel.js`
  * ships both dictionaries.
  */
-export function Travel({ travel, site, locale }: TravelProps) {
+export function Travel({ travel, site, locations, locale }: TravelProps) {
   const T = tTravel(locale);
   const off = officialOf(site);
   const en = locale === 'en';
@@ -39,16 +43,7 @@ export function Travel({ travel, site, locale }: TravelProps) {
   // The payment answer interpolates the live primary bank account.
   const faqItems = T.faqs.map((f) => ({ question: f.question, answer: fillBank(f.answer, off.bank) }));
 
-  // "Cara Pesan" gives way to "Kota Layanan": the hub is a page reachable
-  // nowhere else from here, while the booking steps are an anchor the reader
-  // scrolls past anyway. Five items is the cap — see Landing.
-  const nav: NavItem[] = [
-    { label: T.navBeranda, href: localeHref(locale) },
-    { label: T.navRute, href: '#rute', anchor: true },
-    { label: T.navFaq, href: '#faq', anchor: true },
-    { label: T.navKota, href: localeHref(locale, 'sewa-mobil') },
-    { label: T.navBlog, href: blogHref() },
-  ];
+  const nav = siteNav(locale, locations);
 
   return (
     <>
@@ -105,6 +100,16 @@ export function Travel({ travel, site, locale }: TravelProps) {
             </div>
           </div>
         </section>
+
+        {/* No `order` — this page composes its sections inline, so they all
+            default to 0 and document order is what places them. */}
+        <PageAnchors
+          items={[
+            { label: T.navRute, href: '#rute' },
+            { label: T.navCara, href: '#cara' },
+            { label: T.navFaq, href: '#faq' },
+          ]}
+        />
 
         <section data-screen-label="Termasuk Tarif" style={{ background: '#ffffff', borderBottom: '1px solid var(--ar-color-border)' }}>
           <div

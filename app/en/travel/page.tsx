@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Travel } from '@/screens/Travel';
-import { getSite, getTravel } from '@/lib/data';
+import { getLocations, getSite, getTravel } from '@/lib/data';
 import { jsonLdProps, travelSeo } from '@/lib/seo';
 import { fillBank, tTravel } from '@/lib/i18n';
 import { travelAreaServed, travelOffers } from '@/lib/travel';
@@ -36,12 +36,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TravelPageEn() {
-  const [site, travel] = await Promise.all([getSite(), getTravel()]);
+  const [site, travel, locations] = await Promise.all([getSite(), getTravel(), getLocations()]);
   const { jsonLd } = await seo();
   return (
     <>
       <script {...jsonLdProps(jsonLd)} />
-      <Travel travel={travel} site={site} locale="en" />
+      <Travel travel={travel} site={site} locations={locations} locale="en" />
     </>
   );
 }

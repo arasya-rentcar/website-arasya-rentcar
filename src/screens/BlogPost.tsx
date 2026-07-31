@@ -40,6 +40,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
       <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
         <BlogHeader
           locale={locale}
+          locations={locations}
           waHref={wa(
             en
               ? 'Hello Arasya, I would like to ask about your chauffeured car rental. (ref: blog-nav)'

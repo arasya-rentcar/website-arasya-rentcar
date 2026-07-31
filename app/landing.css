@@ -50,6 +50,59 @@
   }
 }
 
+/* ------------------------------------------------- "Area Layanan" dropdown */
+
+/* A native <details>, so the header needs no JS. The panel is absolutely
+   positioned, which requires the details itself to be the containing block —
+   otherwise it lays out in flow and pushes the whole bar down when opened. */
+.site-nav-drop {
+  position: relative;
+}
+
+.site-nav-drop summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-drop[open] .site-nav-caret {
+  transform: rotate(180deg);
+}
+
+.site-nav-caret {
+  transition: transform var(--ar-duration-fast) var(--ar-ease);
+}
+
+.site-nav-drop-panel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 12px);
+  min-width: 210px;
+  background: #ffffff;
+  border: 1px solid var(--ar-color-border);
+  border-radius: var(--ar-radius-lg);
+  box-shadow: var(--ar-shadow-lg);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 40;
+}
+
+/* The bar is centred in a 1160px container, so a menu near the right edge would
+   otherwise overflow the viewport at the 768px breakpoint where space is
+   tightest. Anchoring the panel's right edge to the summary avoids it. */
+@media (max-width: 900px) {
+  .site-nav-drop-panel {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+}
+
+.site-nav-drop-panel a:hover {
+  background: var(--ar-blue-50);
+}
+
 /* ------------------------------------------------------- section reordering */
 
 /*
