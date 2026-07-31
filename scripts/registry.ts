@@ -157,16 +157,37 @@ function snapshot(): SnapshotShape {
 const byKey = <T extends { key: string }>(rows: T[]): Record<string, T> =>
   Object.fromEntries(rows.map((r) => [r.key, r]));
 
+/**
+ * Applies the post-handoff edits. Idempotent, and applied to both sources: once
+ * the snapshot has been regenerated it already contains Singapore and no longer
+ * contains Bangkok, so re-running these is a no-op rather than a double edit.
+ */
+function applyCityEdits(cities: Record<string, RawCity>): Record<string, RawCity> {
+  const out: Record<string, RawCity> = {};
+  for (const [k, c] of Object.entries(cities)) {
+    if (RETIRED_CITY_KEYS.includes(k)) continue;
+    out[k] = CITY_PATCHES[k] ? CITY_PATCHES[k](c) : c;
+  }
+  for (const [k, c] of Object.entries(ADDED_CITIES)) out[k] = c;
+  return out;
+}
+
+function applyPostEdits(posts: Record<string, RawPost>): Record<string, RawPost> {
+  return Object.fromEntries(
+    Object.entries(posts).map(([k, p]) => [k, POST_PATCHES[k] ? POST_PATCHES[k](p) : p])
+  );
+}
+
 export async function loadCities(): Promise<Record<string, RawCity>> {
-  if (!HAS_HANDOFF) return byKey(snapshot().locations);
+  if (!HAS_HANDOFF) return applyCityEdits(byKey(snapshot().locations));
   const m = await importRegistry<{ citiesBase: Record<string, RawCity> }>('city-landing/cities.js');
-  return m.citiesBase;
+  return applyCityEdits(m.citiesBase);
 }
 
 export async function loadPosts(): Promise<Record<string, RawPost>> {
-  if (!HAS_HANDOFF) return byKey(snapshot().posts);
+  if (!HAS_HANDOFF) return applyPostEdits(byKey(snapshot().posts));
   const m = await importRegistry<{ postsBase: Record<string, RawPost> }>('blog-post/posts.js');
-  return m.postsBase;
+  return applyPostEdits(m.postsBase);
 }
 
 export async function loadSite(): Promise<Omit<Site, 'gallery' | 'en' | 'updatedAt'>> {
@@ -333,6 +354,170 @@ export const OVERSEAS_TRUST: TrustCard[] = [
     description: 'Kapasitas dan kelas unit sesuai konfirmasi tertulis.',
   },
 ];
+
+/* ------------------------------------------- entries added / retired later */
+
+/**
+ * Bangkok is retired. The handoff shipped both a Thailand country page and a
+ * Bangkok city page, but Bangkok is the only Thai city Arasya serves — so the
+ * two pages covered one market, competing for the same queries with near-identical
+ * content. Thailand keeps the market; its directory already lists Bangkok.
+ *
+ * `db:seed` deletes these rows explicitly. It cannot simply drop anything absent
+ * from the registry, because once Content Studio is live the database will
+ * legitimately hold entries the registry has never seen.
+ */
+export const RETIRED_CITY_KEYS = ['bangkok'];
+
+/**
+ * Singapore, added after the handoff. Same commercial model as Thailand and
+ * Malaysia — `country !== 'ID'` makes the templates drop the price grid on its
+ * own, so fleet and tariffs are settled over WhatsApp with no prices anywhere on
+ * the page or in its structured data.
+ *
+ * Written from scratch rather than adapted from Bangkok. `verify:content` fails
+ * the build on editorial or destination copy shared between entries, which is
+ * the doorway-page rule the handoff is emphatic about — and two overseas pages
+ * with the same sentences reworded is exactly what that rule exists to stop.
+ */
+export const ADDED_CITIES: Record<string, RawCity> = {
+  singapura: {
+    slug: 'sewa-mobil-singapura',
+    name: 'Singapura',
+    code: 'SIN',
+    pageType: 'city',
+    template: 'city',
+    variant: 'terang',
+    country: 'SG',
+    h1: 'Sewa Mobil Singapura dengan Supir',
+    heroSubtitle:
+      'Mobil pribadi dengan supir untuk wisatawan Indonesia di Singapura — penjemputan Bandara Changi, perjalanan dalam kota, hingga rute lintas batas, dengan pendampingan admin dalam Bahasa Indonesia.',
+    heroStat: 'Penjemputan Changi · Admin berbahasa Indonesia · Support 24/7',
+    metaTitle: 'Sewa Mobil Singapura dengan Supir — Arasya Rent Car',
+    metaDescription:
+      'Sewa mobil dengan supir di Singapura untuk wisatawan Indonesia. Penjemputan Bandara Changi, city tour, dan rute lintas batas ke Johor. Konsultasi via WhatsApp.',
+    trustRouteDesc: 'Memahami sistem ERP, zona parkir, dan jam padat Singapura.',
+    serviceLine: 'Singapura dan rute lintas batas ke Malaysia',
+    editorial: {
+      eyebrow: 'Mengenal Singapura',
+      title: 'Kota-negara yang rapi, padat aturan, dan cepat dijelajahi',
+      lead: 'Luasnya hanya sekitar 730 kilometer persegi, tetapi Singapura menuntut perencanaan: biaya jalan elektronik berubah menurut jam, dan ruang parkir di pusat kota sangat terbatas.',
+      paragraphs: [
+        'Sistem ERP menaikkan biaya masuk kawasan tertentu pada jam sibuk, sementara gedung-gedung di Orchard dan Marina menerapkan tarif parkir progresif. Bagi Anda yang membawa keluarga atau mengejar jadwal rapat, perhitungan seperti itu mudah mengganggu ritme perjalanan.',
+        'Supir yang mendampingi Anda memahami peta tarif dan pola lalu lintas kota ini, sehingga seluruh perhitungan tersebut tidak lagi menjadi urusan Anda — cukup sebutkan tujuan berikutnya, termasuk bila perjalanan berlanjut menyeberang ke Johor.',
+      ],
+    },
+    destinationsSubtitle:
+      'Sebutkan tujuan Anda — kami susun urutan kunjungan beserta titik penjemputannya.',
+    destinations: [
+      {
+        area: 'Marina Bay',
+        name: 'Marina Bay Sands & Gardens by the Bay',
+        description:
+          'Kawasan tepi teluk dengan taman futuristik, dek observasi, dan pertunjukan cahaya setiap malam.',
+      },
+      {
+        area: 'Sentosa',
+        name: 'Pulau Sentosa',
+        description:
+          'Universal Studios, akuarium, dan pantai buatan dalam satu pulau resor yang mudah dijangkau berkendara.',
+      },
+      {
+        area: 'Orchard',
+        name: 'Orchard Road',
+        description:
+          'Koridor belanja sepanjang dua kilometer dengan pusat perbelanjaan yang saling terhubung di bawah tanah.',
+      },
+      {
+        area: 'Changi',
+        name: 'Jewel Changi Airport',
+        description:
+          'Air terjun dalam ruangan tertinggi di dunia dan taman berlapis yang menyatu dengan terminal bandara.',
+      },
+      {
+        area: 'Pusat Kota',
+        name: 'Chinatown & Kampong Glam',
+        description:
+          'Dua kawasan warisan dengan kuil, masjid bersejarah, dan deretan rumah toko berwarna.',
+      },
+      {
+        area: 'Mandai',
+        name: 'Singapore Zoo & Night Safari',
+        description:
+          'Kompleks satwa terbuka di utara pulau, sekitar 40 menit berkendara dari pusat kota.',
+      },
+    ],
+    outOfTownExamples: 'Johor Bahru, Legoland, atau Malaka',
+    pickupPoints: 'Bandara Changi, Terminal Feri HarbourFront, dan hotel tempat Anda menginap',
+    areaServed: ['Singapura', 'Marina Bay', 'Sentosa', 'Orchard', 'Changi'],
+    routes: [
+      {
+        to: 'Johor Bahru',
+        duration: '±1–2 jam',
+        note: 'Melalui Woodlands atau Tuas — waktu tempuh bergantung antrean imigrasi.',
+      },
+      {
+        to: 'Legoland Malaysia',
+        duration: '±1,5 jam',
+        note: 'Tujuan keluarga di Nusajaya, tidak jauh setelah perbatasan Tuas.',
+      },
+      {
+        to: 'Malaka',
+        duration: '±3,5 jam',
+        note: 'Kota warisan dunia — paling nyaman ditempuh sebagai perjalanan menginap.',
+      },
+      {
+        to: 'Kuala Lumpur',
+        duration: '±5 jam',
+        note: 'Melalui Lebuhraya Utara–Selatan, dapat dirangkai dengan layanan kami di Malaysia.',
+      },
+    ],
+    faqExtra: [
+      {
+        question: 'Apakah mobil dapat menyeberang ke Malaysia?',
+        answer:
+          'Perjalanan lintas batas ke Johor Bahru maupun kota lain di Malaysia dapat kami atur beserta kelengkapan dokumen kendaraannya. Sampaikan tanggal dan tujuan Anda melalui WhatsApp agar ketersediaannya kami konfirmasikan lebih dahulu.',
+      },
+      {
+        question: 'Apakah biaya ERP dan parkir sudah termasuk?',
+        answer:
+          'Rincian biaya jalan elektronik dan parkir kami cantumkan dalam penawaran tertulis sebelum perjalanan dimulai, sehingga tidak ada tambahan yang muncul di tengah perjalanan.',
+      },
+    ],
+  },
+};
+
+/**
+ * Field-level corrections to handoff entries, applied at seed time.
+ *
+ * Retiring Bangkok leaves Thailand's directory pointing at `/sewa-mobil-bangkok`,
+ * a URL that will no longer exist. A directory entry whose `slug` is null still
+ * renders — it just stops being a link — which is exactly the right outcome:
+ * Thailand does serve Bangkok, it simply no longer has its own page.
+ */
+export const CITY_PATCHES: Record<string, (c: RawCity) => RawCity> = {
+  thailand: (c) => ({
+    ...c,
+    cityDirectory: (c.cityDirectory ?? []).map((d) =>
+      d.name === 'Bangkok' ? { ...d, slug: null } : d
+    ),
+  }),
+};
+
+/**
+ * The Bangkok article outlives the Bangkok page. Every article must link to
+ * exactly one city page (the handoff's editorial rule, and the relation the
+ * `posts.city_key` foreign key enforces), so it moves to Thailand — still the
+ * correct destination for a reader planning transport in Bangkok.
+ */
+export const POST_PATCHES: Record<string, (p: RawPost) => RawPost> = {
+  'transportasi-bangkok-keluarga': (p) => ({
+    ...p,
+    cityKey: 'thailand',
+    cityName: 'Thailand',
+    citySlug: 'sewa-mobil-thailand',
+  }),
+};
 
 /**
  * WhatsApp routing per landing page, keyed by registry key.

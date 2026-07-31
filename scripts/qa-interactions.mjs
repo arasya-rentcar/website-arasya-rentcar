@@ -129,7 +129,7 @@ for (const path of [
   '/',
   '/sewa-mobil-bogor',
   '/sewa-mobil-yogyakarta',
-  '/sewa-mobil-bangkok',
+  '/sewa-mobil-singapura',
   '/travel',
   '/blog',
   '/blog/itinerari-puncak-satu-hari',
@@ -252,7 +252,11 @@ await go('/sewa-mobil');
       shown.length > 0 && domestic.length === 0,
       `still visible: ${domestic.join(', ')}`
     );
-    ok('remaining cards are the overseas ones', shown.every((h) => /(bangkok|thailand|malaysia)/.test(h)), shown.join(', '));
+    ok(
+      'remaining cards are the overseas ones',
+      shown.every((h) => /(singapura|thailand|malaysia)/.test(h)),
+      shown.join(', ')
+    );
   }
 }
 

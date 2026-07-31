@@ -231,7 +231,7 @@ for (const f of registrySite.fleet) {
 for (const u of registryTravel.units) {
   if (u.img) referenced.add(`/assets/cars-with-logo/${u.img}.webp`);
 }
-referenced.add('/assets/brand/logo-arasya.webp');
+referenced.add('/assets/brand/logo-arasya.png');
 
 const missing = [...referenced].filter((p) => !existsSync(resolve(process.cwd(), 'public', p.slice(1))));
 if (missing.length) {

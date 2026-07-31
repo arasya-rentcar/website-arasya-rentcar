@@ -28,7 +28,7 @@ const PAGES = [
   '/sewa-mobil-bogor',
   '/sewa-mobil-yogyakarta',
   '/sewa-mobil-bali',
-  '/sewa-mobil-bangkok',
+  '/sewa-mobil-singapura',
   '/sewa-mobil-thailand',
   '/sewa-mobil-malaysia',
   '/travel',

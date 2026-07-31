@@ -10,6 +10,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 import {
+  RETIRED_CITY_KEYS,
   cityToRow,
   loadCities,
   loadI18nOverlays,
@@ -116,6 +117,40 @@ const [cities, posts, site, travel, enOverlays] = await Promise.all([
   const { error } = await supabase.from('posts').upsert(rows, { onConflict: 'key' });
   if (error) fail('posts', error.message);
   console.log(`  ✓ posts — ${rows.length} rows`);
+}
+
+// Retired entries. Upserting cannot remove a row, so without this an entry
+// dropped from the registry stays published and keeps rendering.
+//
+// Deleted by explicit key rather than "anything not in the registry": once
+// Content Studio is live the database will legitimately hold entries the
+// registry has never seen, and a blanket delete would erase them on the next
+// seed. Posts are re-pointed before this runs, so the city_key FK is already
+// clear — but ON DELETE SET NULL would silently orphan an article if it were not.
+if (RETIRED_CITY_KEYS.length) {
+  const { data: stillLinked } = await supabase
+    .from('posts')
+    .select('key,city_key')
+    .in('city_key', RETIRED_CITY_KEYS);
+  if (stillLinked?.length) {
+    fail(
+      'retire locations',
+      `${stillLinked.map((p) => p.key).join(', ')} still reference a retired city — ` +
+        `re-point them in POST_PATCHES first, or the article loses its city link.`
+    );
+  }
+
+  const { data, error } = await supabase
+    .from('locations')
+    .delete()
+    .in('key', RETIRED_CITY_KEYS)
+    .select('key');
+  if (error) fail('retire locations', error.message);
+  console.log(
+    data?.length
+      ? `  ✓ retired — removed ${data.map((r) => r.key).join(', ')}`
+      : `  · retired — nothing to remove (${RETIRED_CITY_KEYS.join(', ')} already gone)`
+  );
 }
 
 /* -------------------------------------------------------------------- admin */

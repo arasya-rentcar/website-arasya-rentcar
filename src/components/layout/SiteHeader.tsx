@@ -98,7 +98,7 @@ export function SiteHeader({
           style={{ display: 'inline-flex', alignItems: 'center' }}
         >
           <Image
-            src="/assets/brand/logo-arasya.webp"
+            src="/assets/brand/logo-arasya.png"
             alt="Arasya Rent Car"
             width={128}
             height={32}
