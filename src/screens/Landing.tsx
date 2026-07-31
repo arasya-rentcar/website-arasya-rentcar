@@ -139,12 +139,17 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
 
   /* -------------------------------------------------------------- chrome */
 
+  // Two in-page anchors plus the site-wide destinations. Capped at five: the
+  // desktop bar appears at 768px and has to fit the logo, the ID|EN pill and the
+  // CTA alongside these, so a sixth item overflows at that breakpoint.
   const nav: NavItem[] = [
     { label: t.navBeranda, href: localeHref(locale) },
     isCountry
       ? { label: t.navKota, href: '#kota', anchor: true }
       : { label: t.navArmada, href: '#armada', anchor: true },
     { label: t.navFaq, href: '#faq', anchor: true },
+    { label: t.navTravel, href: localeHref(locale, 'travel') },
+    { label: t.navBlog, href: localeHref(locale, 'blog') },
   ];
 
   // Only offer the language pill when this entry exists in the other locale.

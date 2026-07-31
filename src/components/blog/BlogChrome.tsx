@@ -40,28 +40,58 @@ export function BlogHeader({ locale, waHref }: { locale: Locale; waHref: string 
             BLOG
           </span>
         </Link>
-        <WaLink
-          href={waHref}
-          data-cta="blog-nav-wa"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            minHeight: 40,
-            padding: '0 18px',
-            borderRadius: 999,
-            background: 'var(--ar-blue-950)',
-            color: '#ffffff',
-            fontSize: 'var(--ar-text-sm)',
-            fontWeight: 'var(--ar-weight-semibold)',
-            textDecoration: 'none',
-          }}
-        >
-          {locale === 'en' ? 'Contact Us' : 'Hubungi Kami'}
-        </WaLink>
+
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 2vw, 20px)' }}>
+          {/* The blog previously offered only the wordmark and a WhatsApp CTA, so
+              an article was a one-way street: the commercial pages linked in, and
+              nothing linked back out except the footer. These carry the return
+              half of the internal-link mesh. Hidden on phones, where the header
+              is already tight — the footer keeps the full city list there. */}
+          <div className="site-nav-links">
+            {/* The wordmark points at /blog, so without this an article has no
+                route back to the site itself. */}
+            <Link href={localeHref(locale)} style={BLOG_NAV_LINK}>
+              {locale === 'en' ? 'Home' : 'Beranda'}
+            </Link>
+            <Link href={localeHref(locale, 'sewa-mobil')} style={BLOG_NAV_LINK}>
+              {locale === 'en' ? 'Service Cities' : 'Kota Layanan'}
+            </Link>
+            <Link href={localeHref(locale, 'travel')} style={BLOG_NAV_LINK}>
+              Travel
+            </Link>
+          </div>
+          <WaLink
+            href={waHref}
+            data-cta="blog-nav-wa"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 40,
+              padding: '0 18px',
+              borderRadius: 999,
+              background: 'var(--ar-blue-950)',
+              color: '#ffffff',
+              fontSize: 'var(--ar-text-sm)',
+              fontWeight: 'var(--ar-weight-semibold)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {locale === 'en' ? 'Contact Us' : 'Hubungi Kami'}
+          </WaLink>
+        </nav>
       </div>
     </header>
   );
 }
+
+const BLOG_NAV_LINK = {
+  fontSize: 'var(--ar-text-sm)',
+  fontWeight: 'var(--ar-weight-medium)',
+  color: 'var(--ar-color-text-secondary)',
+  textDecoration: 'none',
+  whiteSpace: 'nowrap',
+} as const;
 
 export function BlogFooter({
   locale,

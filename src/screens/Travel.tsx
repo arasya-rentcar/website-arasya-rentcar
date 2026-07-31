@@ -39,11 +39,14 @@ export function Travel({ travel, site, locale }: TravelProps) {
   // The payment answer interpolates the live primary bank account.
   const faqItems = T.faqs.map((f) => ({ question: f.question, answer: fillBank(f.answer, off.bank) }));
 
+  // "Cara Pesan" gives way to "Kota Layanan": the hub is a page reachable
+  // nowhere else from here, while the booking steps are an anchor the reader
+  // scrolls past anyway. Five items is the cap — see Landing.
   const nav: NavItem[] = [
     { label: T.navBeranda, href: localeHref(locale) },
     { label: T.navRute, href: '#rute', anchor: true },
-    { label: T.navCara, href: '#cara', anchor: true },
     { label: T.navFaq, href: '#faq', anchor: true },
+    { label: T.navKota, href: localeHref(locale, 'sewa-mobil') },
     { label: T.navBlog, href: localeHref(locale, 'blog') },
   ];
 

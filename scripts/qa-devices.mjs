@@ -42,6 +42,11 @@ const DEVICES = [
   { name: 'Fold cover', w: 344, h: 882, mobile: true },
   { name: 'iPhone 15', w: 393, h: 852, mobile: true },
   { name: 'Fold open', w: 884, h: 1104, mobile: true },
+  // Exactly the breakpoint where the burger gives way to the full desktop nav.
+  // The bar has to fit logo + links + ID|EN pill + CTA in 768px, so this is
+  // where an extra nav item overflows first — and nothing else in this list
+  // covers 768–819.
+  { name: 'Nav breakpoint', w: 768, h: 1024, mobile: true },
   { name: 'iPad portrait', w: 820, h: 1180, mobile: true },
   { name: 'iPad landscape', w: 1180, h: 820, mobile: true },
   { name: 'Desktop', w: 1440, h: 900, mobile: false },
