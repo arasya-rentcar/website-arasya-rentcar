@@ -297,6 +297,25 @@ export interface GalleryImage {
 }
 
 /**
+ * A car class offered where exact models are not published.
+ *
+ * Overseas pages replace the fleet grid with these: Arasya does not own the
+ * cars abroad — a local partner supplies them — so naming a model, or showing a
+ * photo of Arasya's own Indonesian unit, would imply a specific car is waiting.
+ * A class describes what the customer actually needs to decide (how many people,
+ * how much luggage, what kind of trip) without claiming a forecourt.
+ *
+ * `name` doubles as the quote form's option value, so it stays short.
+ */
+export interface UnitClass {
+  name: string;
+  /** "6 penumpang + driver" — stated this way because capacity counts the driver. */
+  seats: string;
+  luggage: string;
+  useCase: string;
+}
+
+/**
  * EN overlays for global content. Mirrors `i18n.js`'s interim approach:
  * SERVICES_EN keyed by service slug, TRUST_EN keyed by preset.
  */
@@ -312,6 +331,11 @@ export interface SiteTranslation {
    * through the CMS; until then an EN page shows the Indonesian badge.
    */
   fleet?: Record<string, { badge?: string }>;
+  /**
+   * Keyed by UnitClass.name — the Indonesian name, which is the stable key even
+   * once `name` itself is translated.
+   */
+  genericUnits?: Record<string, Partial<UnitClass>>;
 }
 
 /** Singleton row — data shared by ALL pages. */
@@ -319,7 +343,7 @@ export interface Site {
   settings: SiteSettings;
   fleet: FleetUnit[];
   fleetNotes: FleetNotes;
-  genericUnits: string[];
+  genericUnits: UnitClass[];
   services: Service[];
   /** PLACEHOLDER in the handoff — replace with real GBP reviews before launch. */
   testimonials: Testimonial[];

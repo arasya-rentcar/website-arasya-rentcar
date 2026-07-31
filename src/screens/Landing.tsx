@@ -135,7 +135,9 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
 
   // The quote form offers generic classes wherever exact models are confirmed
   // in conversation, so it can't imply a specific unit is on the forecourt.
-  const carOptions = consultOnly ? site.genericUnits : fleetCards.map((f) => f.name);
+  const carOptions = consultOnly
+    ? site.genericUnits.map((u) => u.name)
+    : fleetCards.map((f) => f.name);
 
   /* -------------------------------------------------------------- chrome */
 
@@ -260,6 +262,9 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
               title: isCountry ? t.unitsTitle : withCity(t.unitsCityTitle, cityName),
               subtitle: isCountry ? t.unitsSub : withCity(t.unitsCitySub, cityName),
               ask: isCountry ? t.unitsAsk : t.unitsCityAsk,
+              seats: t.unitsSeats,
+              luggage: t.unitsLuggage,
+              partnerNote: withCity(t.unitsPartnerNote, cityName || noun),
             }}
           />
         ) : (

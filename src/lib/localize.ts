@@ -11,7 +11,17 @@
  * localStorage toggle is a preview affordance and is deliberately not ported:
  * indexable pages must be statically rendered per locale.
  */
-import type { Locale, Location, Post, Site, Service, TrustCard, FleetNotes, FleetUnit } from '@/types';
+import type {
+  Locale,
+  Location,
+  Post,
+  Site,
+  Service,
+  TrustCard,
+  FleetNotes,
+  FleetUnit,
+  UnitClass,
+} from '@/types';
 
 /** Drops undefined/empty values so a partial overlay can't blank out ID copy. */
 function overlay<T extends object>(base: T, patch: Partial<T> | undefined): T {
@@ -70,12 +80,19 @@ export function localizeSite(site: Site, locale: Locale): Site {
     overlay(f, en.fleet?.[f.name] as Partial<FleetUnit> | undefined)
   );
 
+  // Keyed by the Indonesian name, which stays the key even when the overlay
+  // translates `name` itself — so look up before overlaying, not after.
+  const genericUnits: UnitClass[] = (site.genericUnits ?? []).map((u) =>
+    overlay(u, en.genericUnits?.[u.name])
+  );
+
   return {
     ...site,
     services,
     trustDefaults,
     fleetNotes,
     fleet,
+    genericUnits,
     // Real customer quotes are never machine-translated — keep the original
     // language in both locales (handoff rule).
     testimonials: site.testimonials,

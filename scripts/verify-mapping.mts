@@ -27,6 +27,8 @@ import {
   DESTINATION_MEDIA,
   OVERSEAS_TRUST,
   REAL_TESTIMONIALS,
+  UNIT_CLASSES,
+  UNIT_CLASSES_EN,
   WA_ROUTING,
   cityToRow,
   loadCities,
@@ -124,7 +126,31 @@ const enOverlays = await loadI18nOverlays();
   check('settings', registrySite.settings, site.settings);
   check('fleet', registrySite.fleet, site.fleet);
   check('fleetNotes', registrySite.fleetNotes, site.fleetNotes);
-  check('genericUnits', registrySite.genericUnits, site.genericUnits);
+  // Like the testimonials, deliberately NOT the registry's: `site.js` ships four
+  // bare name strings and the overseas pages need classes with capacity, luggage
+  // and use case. Asserted against the override so a re-seed cannot flatten them.
+  check('genericUnits are the full classes', UNIT_CLASSES, site.genericUnits);
+  check(
+    'every class carries all four fields',
+    [],
+    site.genericUnits.filter((u) => !u.name || !u.seats || !u.luggage || !u.useCase)
+  );
+  // No model names anywhere in the class copy. These pages exist because Arasya
+  // does not own the cars abroad, so a model — even hedged — re-implies the
+  // forecourt the section avoids. Checked against the real fleet, so adding a
+  // car to the fleet automatically extends the rule.
+  {
+    const brands = new Set(
+      registrySite.fleet.flatMap((f) => f.name.split(/\s+/)).map((w) => w.toLowerCase())
+    );
+    const leaked = site.genericUnits.filter((u) =>
+      `${u.name} ${u.seats} ${u.luggage} ${u.useCase}`
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .some((w) => w.length > 2 && brands.has(w))
+    );
+    check('no fleet model names leak into the classes', [], leaked);
+  }
   check('services', registrySite.services, site.services);
   // Testimonials are deliberately NOT the registry's: `site.js` ships
   // placeholder reviews with invented names, replaced by REAL_TESTIMONIALS.
@@ -183,6 +209,26 @@ console.log('\nlocalization');
   );
   check('testimonials stay in the original language', site.testimonials, en.testimonials);
   check('id locale is a passthrough', site, localizeSite(site, 'id'));
+
+  // The class overlay is keyed by the *Indonesian* name while also translating
+  // `name`, so a lookup done after overlaying would silently miss every entry
+  // and leave the EN pages in Indonesian.
+  check(
+    'unit classes translate',
+    ['7-Seat MPV', 'Premium 6-Seat MPV', '11–14 Seat Van', 'Executive SUV'],
+    en.genericUnits.map((u) => u.name)
+  );
+  check(
+    'every translated class is complete',
+    [],
+    en.genericUnits.filter((u) => !u.seats || !u.luggage || !u.useCase)
+  );
+  check(
+    'no Indonesian class copy survives in EN',
+    [],
+    en.genericUnits.filter((u) => /\b(penumpang|koper|kursi|bagasi)\b/i.test(`${u.seats} ${u.luggage} ${u.useCase}`))
+  );
+  check('every ID class has an EN overlay', [], site.genericUnits.filter((u) => !UNIT_CLASSES_EN[u.name]));
 
   // Untranslated locations must report no EN content and pass through unchanged.
   const bogorRow = { ...cityToRow('bogor', cities.bogor, 0), updated_at: STAMP } as unknown as LocationRow;

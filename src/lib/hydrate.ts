@@ -29,6 +29,7 @@ import type {
   TravelRoute,
   TravelUnit,
   TrustCard,
+  UnitClass,
 } from '@/types';
 
 /* --------------------------------------------------------------- row types */
@@ -97,7 +98,7 @@ export interface SiteRow {
   settings: SiteSettings;
   fleet: FleetUnit[];
   fleet_notes: FleetNotes;
-  generic_units: string[];
+  generic_units: UnitClass[];
   services: Service[];
   testimonials: Testimonial[];
   trust_defaults: TrustCard[];

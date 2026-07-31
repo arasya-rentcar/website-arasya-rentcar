@@ -238,6 +238,14 @@ export const LANDING_STR = {
       'Ketersediaan unit dan tarif di {city} kami konfirmasi langsung melalui WhatsApp, menyesuaikan tanggal, durasi, dan rute perjalanan Anda.',
     unitsCityAsk: 'Tanya ketersediaan & tarif',
 
+    unitsSeats: 'Kapasitas',
+    unitsLuggage: 'Bagasi',
+    // States the partner arrangement outright. The reader is being asked to book
+    // a car in a country Arasya does not operate in, and finding that out after
+    // paying is exactly the surprise that costs a review.
+    unitsPartnerNote:
+      'Unit di {city} disediakan oleh mitra operasional kami di sana, dan dikoordinasikan penuh oleh admin Arasya dari Indonesia. Model persis, plat, dan tarif final dikonfirmasi melalui WhatsApp sebelum Anda memesan.',
+
     layananEyebrow: 'Layanan',
     layananTitle: 'Satu operator, semua kebutuhan perjalanan',
     layananAsk: 'Tanya layanan →',
@@ -337,6 +345,11 @@ export const LANDING_STR = {
     unitsCitySub:
       'Availability and rates in {city} are confirmed directly over WhatsApp, based on your dates, duration and route.',
     unitsCityAsk: 'Ask about availability & rates',
+
+    unitsSeats: 'Capacity',
+    unitsLuggage: 'Luggage',
+    unitsPartnerNote:
+      'Cars in {city} are supplied by our operating partner there, coordinated end to end by Arasya admin in Indonesia. The exact model, plate and final rate are confirmed over WhatsApp before you book.',
 
     layananEyebrow: 'Services',
     layananTitle: 'One operator, every travel need',

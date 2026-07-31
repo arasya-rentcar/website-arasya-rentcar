@@ -19,6 +19,7 @@ import type {
   Travel,
   TrustCard,
   DirectoryEntry,
+  UnitClass,
 } from '../src/types';
 
 const HANDOFF = resolve(process.cwd(), 'arasya-handoff');
@@ -216,13 +217,19 @@ interface I18nModule {
  * files (src/lib/i18n.ts), not the CMS-editable database.
  */
 export async function loadI18nOverlays(): Promise<SiteTranslation> {
-  if (!HAS_HANDOFF) return snapshot().site.en ?? {};
-  const m = await importRegistry<I18nModule>('city-landing/i18n.js');
-  return {
-    services: m.SERVICES_EN,
-    trustDefaults: m.TRUST_EN,
-    fleetNotes: m.FLEET_NOTES_EN,
-  };
+  // `genericUnits` is a post-handoff addition on both paths: `i18n.js` predates
+  // the car classes entirely, and the snapshot only carries whatever the last
+  // seed wrote. Applied here rather than merged in, so it is the same override
+  // as UNIT_CLASSES itself.
+  const base: SiteTranslation = HAS_HANDOFF
+    ? await importRegistry<I18nModule>('city-landing/i18n.js').then((m) => ({
+        services: m.SERVICES_EN,
+        trustDefaults: m.TRUST_EN,
+        fleetNotes: m.FLEET_NOTES_EN,
+      }))
+    : (snapshot().site.en ?? {});
+
+  return { ...base, genericUnits: UNIT_CLASSES_EN };
 }
 
 /* -------------------------------------------------------------- row mapping */
@@ -354,6 +361,83 @@ export const OVERSEAS_TRUST: TrustCard[] = [
     description: 'Kapasitas dan kelas unit sesuai konfirmasi tertulis.',
   },
 ];
+
+/**
+ * Car classes for the overseas pages, replacing `site.js`'s bare name strings.
+ *
+ * The handoff shipped four labels — "MPV 7 kursi", "Van 11–14 kursi" and so on —
+ * rendered as pills. On Thailand, Malaysia and Singapore that left the section
+ * about 425px tall against Bogor's 1681px of fleet cards, and it answered none of
+ * the questions someone sizing a car actually has.
+ *
+ * Deliberately no model names and no photos, not even hedged with "setara". The
+ * whole reason these pages drop the price grid is that Arasya does not own the
+ * cars abroad — a partner supplies them — so anything that reads as a specific
+ * vehicle re-implies the forecourt the section exists to avoid. Capacity,
+ * luggage and the kind of trip are the parts we can state truthfully for any
+ * partner in any of the three markets, and they are also what the customer is
+ * actually choosing between.
+ *
+ * Capacity counts the driver, matching `fleetNotes.allin` ("Kapasitas penumpang
+ * sudah termasuk jasa driver"), so it is written as "N penumpang + driver" —
+ * "7 kursi" alone has burned enough bookings that the ambiguity is worth the
+ * extra words.
+ */
+export const UNIT_CLASSES: UnitClass[] = [
+  {
+    name: 'MPV 7 kursi',
+    seats: '6 penumpang + driver',
+    luggage: '3–4 koper kabin',
+    useCase: 'Keluarga kecil, transfer bandara, dan tur harian dalam kota.',
+  },
+  {
+    name: 'MPV Premium 6 kursi',
+    seats: '5 penumpang + driver',
+    luggage: '4 koper sedang',
+    useCase: 'Perjalanan bisnis dan tamu yang mengutamakan kursi kapten serta ruang kaki.',
+  },
+  {
+    name: 'Van 11–14 kursi',
+    seats: '10–13 penumpang + driver',
+    // Not "Bagasi penuh …": the card already labels the row BAGASI.
+    luggage: 'Ruang penuh di belakang baris terakhir',
+    useCase: 'Rombongan kantor, grup wisata, dan penjemputan bandara bersama.',
+  },
+  {
+    name: 'SUV Eksekutif',
+    seats: '6 penumpang + driver',
+    luggage: '3 koper sedang',
+    useCase: 'Jalur menanjak, medan bervariasi, dan agenda yang mengutamakan tampilan.',
+  },
+];
+
+/** EN overlay for the classes above, keyed by the Indonesian name. */
+export const UNIT_CLASSES_EN: Record<string, Partial<UnitClass>> = {
+  'MPV 7 kursi': {
+    name: '7-Seat MPV',
+    seats: '6 passengers + driver',
+    luggage: '3–4 cabin cases',
+    useCase: 'Small families, airport transfers and day tours around the city.',
+  },
+  'MPV Premium 6 kursi': {
+    name: 'Premium 6-Seat MPV',
+    seats: '5 passengers + driver',
+    luggage: '4 medium cases',
+    useCase: 'Business travel and guests who want captain seats and legroom.',
+  },
+  'Van 11–14 kursi': {
+    name: '11–14 Seat Van',
+    seats: '10–13 passengers + driver',
+    luggage: 'Full bay behind the last row',
+    useCase: 'Corporate groups, tour parties and shared airport pickups.',
+  },
+  'SUV Eksekutif': {
+    name: 'Executive SUV',
+    seats: '6 passengers + driver',
+    luggage: '3 medium cases',
+    useCase: 'Climbing roads, mixed terrain, and trips where presence matters.',
+  },
+};
 
 /* ------------------------------------------- entries added / retired later */
 
@@ -648,7 +732,10 @@ export function siteToRow(
     settings: s.settings,
     fleet: s.fleet,
     fleet_notes: s.fleetNotes,
-    generic_units: s.genericUnits,
+    // `site.js` ships four bare name strings. Overridden here, like the
+    // testimonials, so a re-seed cannot quietly flatten the classes back to
+    // pills — see UNIT_CLASSES.
+    generic_units: UNIT_CLASSES,
     services: s.services,
     // The handoff's `site.js` testimonials are placeholder copy with invented
     // names. Overridden here rather than in the database so that re-running the

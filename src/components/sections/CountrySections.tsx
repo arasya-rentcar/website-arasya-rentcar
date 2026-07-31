@@ -1,7 +1,7 @@
 import { SectionHeading } from '@/design-system';
 import { WaGlyph } from '@/components/icons';
 import { WaLink } from '@/components/WaLink';
-import type { DirectoryEntry } from '@/types';
+import type { DirectoryEntry, UnitClass } from '@/types';
 import { CONTAINER } from './styles';
 
 /* ------------------------------------------------------- city directory */
@@ -125,15 +125,30 @@ export function DirectorySection({ entries, cityCode, labels }: DirectorySection
 /* ----------------------------------------------------------- unit classes */
 
 interface UnitClassesSectionProps {
-  units: string[];
+  units: UnitClass[];
   waHref: string;
   cityCode: string;
-  labels: { eyebrow: string; title: string; subtitle: string; ask: string };
+  labels: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    ask: string;
+    seats: string;
+    luggage: string;
+    partnerNote: string;
+  };
 }
 
 /**
- * Kelas Unit — country pages show generic classes instead of the fleet grid,
+ * Kelas Unit — overseas pages show car classes instead of the fleet grid,
  * because exact models and tariffs are confirmed per city in writing.
+ *
+ * These were four pills, which left the section ~425px tall next to Bogor's
+ * 1681px of fleet cards and answered none of the questions someone sizing a car
+ * has. Still no photos and no model names: Arasya does not own these cars, so
+ * anything resembling a specific vehicle re-implies the forecourt that dropping
+ * the price grid was meant to avoid. The partner note says so outright rather
+ * than leaving the reader to infer it.
  */
 export function UnitClassesSection({ units, waHref, cityCode, labels }: UnitClassesSectionProps) {
   return (
@@ -143,28 +158,76 @@ export function UnitClassesSection({ units, waHref, cityCode, labels }: UnitClas
           <SectionHeading eyebrow={labels.eyebrow} title={labels.title} subtitle={labels.subtitle} />
         </div>
         <div
-          className="ar-reveal"
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 24 }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
+            gap: 14,
+            marginTop: 24,
+          }}
         >
           {units.map((unit) => (
-            <span
-              key={unit}
+            <div
+              key={unit.name}
+              className="ar-reveal card-lift-bordered"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '10px 18px',
-                borderRadius: 999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                padding: 'var(--ar-space-5)',
                 background: '#ffffff',
                 border: '1px solid var(--ar-color-border)',
-                fontSize: 'var(--ar-text-sm)',
-                fontWeight: 'var(--ar-weight-medium)',
-                color: 'var(--ar-color-text)',
+                borderRadius: 'var(--ar-radius-lg)',
               }}
             >
-              {unit}
-            </span>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: 'var(--ar-text-md)',
+                  fontWeight: 'var(--ar-weight-semibold)',
+                  color: 'var(--ar-color-text)',
+                }}
+              >
+                {unit.name}
+              </h3>
+
+              {/* A description list, not a paragraph: these are two labelled
+                  facts a reader scans and compares across cards. */}
+              <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <SpecRow label={labels.seats} value={unit.seats} />
+                <SpecRow label={labels.luggage} value={unit.luggage} />
+              </dl>
+
+              <p
+                style={{
+                  margin: 0,
+                  paddingTop: 12,
+                  borderTop: '1px solid var(--ar-color-border)',
+                  fontSize: 'var(--ar-text-sm)',
+                  lineHeight: 1.6,
+                  color: 'var(--ar-color-text-secondary)',
+                  textWrap: 'pretty',
+                }}
+              >
+                {unit.useCase}
+              </p>
+            </div>
           ))}
         </div>
+
+        <p
+          className="ar-reveal"
+          style={{
+            margin: '20px 0 0',
+            maxWidth: '68ch',
+            fontSize: 'var(--ar-text-sm)',
+            lineHeight: 1.7,
+            color: 'var(--ar-color-text-muted)',
+            textWrap: 'pretty',
+          }}
+        >
+          {labels.partnerNote}
+        </p>
+
         <div className="ar-reveal" style={{ marginTop: 20 }}>
           <WaLink
             href={waHref}
@@ -193,5 +256,45 @@ export function UnitClassesSection({ units, waHref, cityCode, labels }: UnitClas
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * One labelled spec inside a class card.
+ *
+ * `<dt>`/`<dd>` rather than two spans: a screen reader announces "Kapasitas,
+ * 6 penumpang + driver" instead of two orphaned fragments.
+ *
+ * Label always on its own line. Laying these out as a wrapping flex row put the
+ * label beside short values and above long ones, so the same field sat
+ * differently on each card and the four read as a ragged column rather than a
+ * comparable spec sheet. Stacking is uniform regardless of how long a
+ * translation turns out to be.
+ */
+function SpecRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt
+        style={{
+          fontSize: 'var(--ar-text-xs)',
+          fontWeight: 'var(--ar-weight-semibold)',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'var(--ar-color-text-muted)',
+        }}
+      >
+        {label}
+      </dt>
+      <dd
+        style={{
+          margin: '2px 0 0',
+          fontSize: 'var(--ar-text-sm)',
+          lineHeight: 1.5,
+          color: 'var(--ar-color-text)',
+        }}
+      >
+        {value}
+      </dd>
+    </div>
   );
 }
