@@ -20,6 +20,20 @@ config({ path: '.env' });
 const ORIGIN = process.env.VERIFY_ORIGIN ?? 'http://localhost:3100';
 
 /**
+ * Whether ORIGIN is a real deployment rather than a local build.
+ *
+ * `local()` rewrites every absolute URL onto ORIGIN so a localhost build can be
+ * checked against a sitemap written for the production domain. That is what
+ * makes the script portable, and also what blinds it: a deployment whose
+ * NEXT_PUBLIC_SITE_URL points somewhere else passes everything, because every
+ * assertion is rewritten onto the host under test before being fetched.
+ *
+ * Against a real origin the advertised URLs can be fetched as written, which is
+ * what a crawler — or WhatsApp building a link preview — actually does.
+ */
+const REMOTE = !/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(ORIGIN);
+
+/**
  * Must match the deployment under test. Both the build and this script read the
  * same .env.local, so they agree locally; when checking a remote origin, pass
  * NEXT_PUBLIC_ALLOW_INDEXING to match what that deployment was built with.
@@ -181,6 +195,40 @@ console.log('\nog:image');
     }
     // A card that 404s is worse than none: the crawler caches the miss.
     ok(`${new URL(loc).pathname} og:image resolves`, s === 200, `${href} → ${s}`);
+  }
+}
+
+/*
+ * The advertised host, fetched as written.
+ *
+ * Everything above is rewritten onto ORIGIN, so a deployment built with the
+ * wrong NEXT_PUBLIC_SITE_URL passes all of it while every absolute URL it
+ * publishes — canonical, og:url, og:image, the sitemap — points at a host that
+ * may not exist. That is not hypothetical: the demo shipped advertising
+ * arasyarentcar.com before the domain was live, so link previews resolved to
+ * nothing even though the card itself was served correctly.
+ */
+if (REMOTE) {
+  console.log('\nadvertised host');
+  const html = await (await fetch(ORIGIN + '/')).text();
+  const og = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+  const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
+
+  ok('home advertises a canonical', Boolean(canonical));
+  if (canonical) {
+    const sameHost = new URL(canonical).origin === new URL(ORIGIN).origin;
+    // Fatal once indexable — a canonical pointing off-host de-indexes the site
+    // that served it. On a noindex demo it only breaks shared links, which is
+    // still worth failing over while it is cheap to fix.
+    ok(
+      `canonical host matches the deployment`,
+      sameHost,
+      `serves ${new URL(ORIGIN).host}, advertises ${new URL(canonical).host} — set NEXT_PUBLIC_SITE_URL`
+    );
+  }
+  if (og) {
+    const s = await status(og);
+    ok(`og:image resolves as advertised`, s === 200, `${og} → ${s}`);
   }
 }
 
