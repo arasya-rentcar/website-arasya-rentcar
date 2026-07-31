@@ -586,6 +586,14 @@ export const CITY_PATCHES: Record<string, (c: RawCity) => RawCity> = {
       d.name === 'Bangkok' ? { ...d, slug: null } : d
     ),
   }),
+  // "14 unit armada" put a ceiling on the fleet rather than describing it. The
+  // grid below the hero already shows every car, so the number added nothing and
+  // capped the impression at whatever happened to be in the registry that week —
+  // the same reason the home page's chip stopped counting. See STR.chipFleetTypes.
+  bogor: (c) => ({
+    ...c,
+    heroStat: c.heroStat.replace(/^\d+\s+unit armada/, 'Armada MPV, SUV & Van'),
+  }),
 };
 
 /**

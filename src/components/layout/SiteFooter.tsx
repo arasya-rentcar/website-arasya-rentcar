@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Locale } from '@/types';
 import type { Official, OtherCityLink } from '@/lib/shared';
 import { localeHref } from '@/lib/localize';
+import { OfficialPhones } from '@/components/OfficialPhones';
 
 interface SiteFooterProps {
   locale: Locale;
@@ -103,15 +104,8 @@ export function SiteFooter({
           }}
         >
           <p style={HEADING}>{labels.contact}</p>
-          <p style={LINE}>WhatsApp: {official.phones[0]?.display}</p>
-          {official.phones.length > 1 && (
-            <p style={LINE}>
-              {official.phones
-                .slice(1)
-                .map((p) => p.display)
-                .join(' · ')}
-            </p>
-          )}
+          <p style={{ ...LINE, marginBottom: 2 }}>WhatsApp</p>
+          <OfficialPhones official={official} style={LINE} />
           <p style={{ margin: 0, fontSize: 'var(--ar-text-sm)' }}>
             Instagram:{' '}
             <a href={official.instagram} target="_blank" rel="noopener" style={SKY_LINK}>

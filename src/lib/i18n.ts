@@ -26,13 +26,21 @@ export const STR = {
     navBlog: 'Blog',
     navAllCities: 'Semua Kota Layanan →',
     cta: 'Pesan Sekarang',
-    heroBadge: 'PT. Ayomi Raya · Sejak Bogor untuk Indonesia & luar negeri',
+    // "Sejak Bogor" was a mistranslation of "From Bogor" — `sejak` is temporal
+    // ("since"), never locational. `mancanegara` also sits better than
+    // "luar negeri" in a positioning line.
+    heroBadge: 'PT. Ayomi Raya · Dari Bogor untuk Indonesia & mancanegara',
     heroTitle: 'Sewa Mobil Premium dengan Supir Profesional',
     heroSub:
       'Perjalanan bisnis, wisata, dan keluarga dengan satu standar layanan: penawaran tertulis, driver terverifikasi, dan pembayaran hanya ke rekening resmi perusahaan.',
     heroWa: 'Pesan via WhatsApp',
     heroKota: 'Lihat Kota Layanan',
-    chipFleetSuffix: ' unit armada siap jalan',
+    // Was `${fleet.length} unit armada siap jalan`. A count reads as a ceiling —
+    // "only 14" — and the grid further down already shows every car, so the
+    // number added nothing it did not also take away. It was derived from
+    // `fleet.length`, so it would have crept back to "15 unit" on the next
+    // upload; stating the range of classes cannot go stale that way.
+    chipFleetTypes: 'MPV · SUV · Van · Premium',
     chipTarif: 'Tarif Dalam Kota & All-in',
     chipSupport: 'Support admin 24/7',
     armadaEyebrow: 'Armada & Tarif',
@@ -72,7 +80,11 @@ export const STR = {
     verifDesc:
       'Seluruh pemesanan Arasya Rent Car dilayani admin resmi PT. Ayomi Raya dengan penawaran tertulis. Waspadai pihak yang mengatasnamakan kami di luar nomor dan rekening di halaman ini.',
     verifNumbers: 'Nomor resmi',
-    verifHours: 'Setiap hari · 24 jam · Bahasa Indonesia',
+    // The EN side always said "Indonesian & English" while this said Indonesian
+    // only, so the two locales stated different facts about the same service
+    // desk. Admin does speak both — confirmed by the owner — so this is the side
+    // that was wrong.
+    verifHours: 'Setiap hari · 24 jam · Bahasa Indonesia & Inggris',
     verifWa: 'Konsultasi WhatsApp',
     bankLabel: 'Rekening resmi pembayaran',
     bankCopy: 'Salin',
@@ -111,7 +123,9 @@ export const STR = {
       'Business trips, holidays, and family travel with one standard of service: written quotes, verified drivers, and payments only to official company accounts.',
     heroWa: 'Book via WhatsApp',
     heroKota: 'View Service Cities',
-    chipFleetSuffix: ' fleet units ready to go',
+    // Identical in both locales — these are the international class
+    // abbreviations, not words to translate.
+    chipFleetTypes: 'MPV · SUV · Van · Premium',
     chipTarif: 'In-City & All-in rates',
     chipSupport: '24/7 admin support',
     armadaEyebrow: 'Fleet & Rates',
@@ -214,7 +228,13 @@ export const LANDING_STR = {
 
     armadaEyebrow: 'Armada & Tarif',
     armadaTitle: 'Pilihan armada untuk setiap kebutuhan',
-    armadaSub: 'Seluruh tarif sudah termasuk jasa supir profesional.',
+    // "jasa driver", not "jasa supir": the site uses `supir` for the person in
+    // narrative and headings ("Sewa Mobil Bogor dengan Supir" is also the search
+    // term) and `driver` for the line item in rates and specs — which is how the
+    // Indonesian rental trade writes it, and what `fleetNotes` already says.
+    // This sentence is a rate inclusion, so it takes `driver`. STR.armadaSub is
+    // the same sentence in the same position and already did.
+    armadaSub: 'Seluruh tarif sudah termasuk jasa driver profesional.',
     tierDalamKota: 'Dalam Kota · 12 Jam',
     tierAllin: 'All-in',
     capacitySuffix: 'Kapasitas {n} penumpang · Termasuk supir',
@@ -276,7 +296,10 @@ export const LANDING_STR = {
 
     galleryEyebrow: 'Galeri',
     galleryTitle: 'Dokumentasi armada & perjalanan',
-    gallerySub: 'Campurkan foto lanskap dan potret.',
+    // Was "Campurkan foto lanskap dan potret." — an imperative left over from the
+    // design handoff, telling whoever filled the gallery what to upload. It was
+    // shipping to customers as body copy. The English was already descriptive.
+    gallerySub: 'Perpaduan foto lanskap dan potret perjalanan.',
 
     testiEyebrow: 'Testimoni',
     testiTitle: 'Kata mereka yang telah berangkat',
@@ -290,7 +313,9 @@ export const LANDING_STR = {
     quoteSub:
       'Lengkapi formulir berikut — tim kami menghubungi Anda melalui WhatsApp untuk konfirmasi.',
     quoteOrContact: 'Atau hubungi langsung:',
-    quoteHours: 'Setiap hari · 24 jam · Bahasa Indonesia',
+    // Same correction as STR.verifHours — these two must agree with each other
+    // and with the English.
+    quoteHours: 'Setiap hari · 24 jam · Bahasa Indonesia & Inggris',
     quoteAssurances: [
       'Penawaran tertulis, tanpa biaya tersembunyi',
       'Konfirmasi cepat melalui WhatsApp',
@@ -522,7 +547,9 @@ export const TRAVEL_STR = {
       'Layanan charter drop off antar kota door to door dari Arasya Rent Car — PT. Ayomi Raya.',
     footContact: 'Kontak',
     footExplore: 'Jelajahi',
-    footRights: 'Seluruh hak cipta.',
+    // Was "Seluruh hak cipta." — truncated. The other two dictionaries carry the
+    // complete phrase, and the English here says "All rights reserved."
+    footRights: 'Seluruh hak cipta dilindungi.',
     footHome: 'Beranda',
     footHub: 'Semua Kota Layanan',
     footBlog: 'Blog Arasya',

@@ -5,6 +5,7 @@ import { AnalyticsBridge } from '@/components/AnalyticsBridge';
 import { Glyph, WaGlyph } from '@/components/icons';
 import { CopyButton } from '@/components/CopyButton';
 import { NavAutoClose } from '@/components/layout/NavAutoClose';
+import { OfficialPhones } from '@/components/OfficialPhones';
 import { Reveals } from '@/components/Reveal';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader, type NavItem } from '@/components/layout/SiteHeader';
@@ -131,7 +132,7 @@ export function Home({ locations, site, locale }: HomeProps) {
               </Link>
             </div>
             <div data-hero="1" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 26 }}>
-              {[fleetAll.length ? `${fleetAll.length}${T.chipFleetSuffix}` : '', T.chipTarif, T.chipSupport]
+              {[T.chipFleetTypes, T.chipTarif, T.chipSupport]
                 .filter(Boolean)
                 .map((c) => (
                   <span
@@ -361,7 +362,11 @@ export function Home({ locations, site, locale }: HomeProps) {
               <p style={{ margin: 0, fontSize: 'var(--ar-text-md)', lineHeight: 1.75, color: 'var(--ar-blue-200)', textWrap: 'pretty' }}>{T.verifDesc}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <p style={{ margin: 0, fontSize: 'var(--ar-text-xs)', fontWeight: 'var(--ar-weight-semibold)', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ar-blue-400)' }}>{T.verifNumbers}</p>
-                <p style={{ margin: 0, fontSize: 'var(--ar-text-md)', fontWeight: 'var(--ar-weight-bold)', color: '#ffffff' }}>{off.phonesDisplay}</p>
+                <OfficialPhones
+                  official={off}
+                  style={{ fontSize: 'var(--ar-text-md)', fontWeight: 'var(--ar-weight-bold)', color: '#ffffff' }}
+                  gap={2}
+                />
                 <p style={{ margin: 0, fontSize: 'var(--ar-text-xs)', color: 'var(--ar-blue-200)' }}>{T.verifHours}</p>
               </div>
               <WaLink href={wa(T.waGeneral, 'HOME-verif-wa')} data-cta="home-verif-wa" className="cta-wa-flat" style={{ ...CTA_WA, alignSelf: 'flex-start', minHeight: 48, padding: '0 24px' }}>

@@ -2,6 +2,7 @@
 import { WaGlyph } from '@/components/icons';
 import { WaLink } from '@/components/WaLink';
 import { blogHref, localeHref } from '@/lib/localize';
+import { OfficialPhones } from '@/components/OfficialPhones';
 import type { Official } from '@/lib/shared';
 import type { Locale } from '@/types';
 
@@ -140,9 +141,16 @@ export function BlogFooter({
             </div>
           </div>
         </div>
-        <p style={{ margin: 0, paddingTop: 14, borderTop: '1px solid rgba(147,197,246,0.18)', fontSize: 'var(--ar-text-xs)', color: 'var(--ar-blue-400)' }}>
-          © {new Date().getFullYear()} PT. Ayomi Raya · {official.phonesDisplay}
-        </p>
+        <div style={{ paddingTop: 14, borderTop: '1px solid rgba(147,197,246,0.18)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
+          <p style={{ margin: 0, fontSize: 'var(--ar-text-xs)', color: 'var(--ar-blue-400)' }}>
+            © {new Date().getFullYear()} PT. Ayomi Raya
+          </p>
+          <OfficialPhones
+            official={official}
+            style={{ fontSize: 'var(--ar-text-xs)', color: 'var(--ar-blue-200)' }}
+            gap={2}
+          />
+        </div>
       </div>
     </footer>
   );
