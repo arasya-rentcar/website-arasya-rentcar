@@ -62,6 +62,24 @@
 [data-variant='terang'] [data-sec='layanan'] {
   order: 58 !important;
 }
+
+/*
+ * ServicesSection drops its bottom padding so it can run straight into the
+ * fleet grid, which normally follows at order 50 on the same background — two
+ * full paddings there would read as a gap between unrelated blocks.
+ *
+ * `terang` moves it to 58, immediately before the dark editorial band. Against a
+ * colour change that zero leaves the service cards touching the boundary with no
+ * breathing room at all. Restore the padding only for this variant, so every
+ * other layout keeps the spacing it was designed with.
+ *
+ * `!important` is required, not stylistic: the zero is an inline style on the
+ * container, and inline styles outrank a stylesheet rule. That is why every
+ * override in this block carries it.
+ */
+[data-variant='terang'] [data-sec='layanan'] > div {
+  padding-bottom: clamp(56px, 8vw, 88px) !important;
+}
 [data-variant='editorial'] [data-sec='mengenal'] {
   order: 25 !important;
 }
