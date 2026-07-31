@@ -130,8 +130,11 @@ export function SiteFooter({
           }}
         >
           <p style={HEADING}>{labels.otherCities}</p>
+          {/* `c.href` comes from `cityHref` and already knows whether this entry
+              has a page in the current locale. Rebuilding it here from the slug
+              is what produced /en/{indonesian-slug} on every English page. */}
           {otherCities.map((c) => (
-            <Link key={c.key} href={localeHref(locale, c.slug)} className="tap-pad" style={SKY_LINK}>
+            <Link key={c.key} href={c.href} className="tap-pad" style={SKY_LINK}>
               {locale === 'en' ? 'Car Rental ' : 'Sewa Mobil '}
               {c.name}
             </Link>

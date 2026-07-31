@@ -6,7 +6,7 @@ import { Reveals } from '@/components/Reveal';
 import { BlogFab, BlogFooter, BlogHeader } from '@/components/blog/BlogChrome';
 import { WaLink } from '@/components/WaLink';
 import { PILL_WA } from '@/screens/BlogIndex';
-import { localeHref } from '@/lib/localize';
+import { blogHref, cityHref, postHref } from '@/lib/localize';
 import { official as officialOf, officialFor, waHref } from '@/lib/shared';
 import type { Locale, Location, Post, Site } from '@/types';
 
@@ -33,7 +33,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
   const off = city ? officialFor(site, city) : officialOf(site);
   const en = locale === 'en';
   const wa = (msg: string) => waHref(off.waPrimary, msg);
-  const cityLinks = locations.map((l) => ({ key: l.key, name: l.name, href: localeHref(locale, l.slug) }));
+  const cityLinks = locations.map((l) => ({ key: l.key, name: l.name, href: cityHref(l, locale) }));
 
   return (
     <>
@@ -54,7 +54,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
               aria-label="Breadcrumb"
               style={{ display: 'flex', flexWrap: 'wrap', gap: 7, fontSize: 'var(--ar-text-sm)', color: 'var(--ar-color-text-muted)' }}
             >
-              <Link href={localeHref(locale, 'blog')} style={{ color: 'var(--ar-blue-600)', textDecoration: 'none' }}>
+              <Link href={blogHref()} style={{ color: 'var(--ar-blue-600)', textDecoration: 'none' }}>
                 Blog
               </Link>
               <span>/</span>
@@ -194,9 +194,9 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
                 >
                   {en ? 'Book via WhatsApp' : 'Pesan via WhatsApp'}
                 </WaLink>
-                {post.citySlug && (
+                {post.citySlug && city && (
                   <Link
-                    href={localeHref(locale, post.citySlug)}
+                    href={cityHref(city, locale)}
                     data-cta="blog-cta-kota"
                     data-city={post.cityKey}
                     style={{
@@ -282,7 +282,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
                     <Link
                       key={rel.key}
                       className="ar-reveal card-lift"
-                      href={localeHref(locale, rel.slug)}
+                      href={postHref(rel, locale)}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',

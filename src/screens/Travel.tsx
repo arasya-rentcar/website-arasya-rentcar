@@ -12,7 +12,7 @@ import { TariffChecker } from '@/components/travel/TariffChecker';
 import { StepsSection } from '@/components/sections/StepsSection';
 import { CONTAINER, CHIP_DARK, CTA_WA, EYEBROW_BADGE } from '@/components/sections/styles';
 import { fillBank, tTravel } from '@/lib/i18n';
-import { localeHref } from '@/lib/localize';
+import { blogHref, localeHref } from '@/lib/localize';
 import { official as officialOf, waHref } from '@/lib/shared';
 import type { Locale, Site, Travel as TravelData } from '@/types';
 
@@ -47,7 +47,7 @@ export function Travel({ travel, site, locale }: TravelProps) {
     { label: T.navRute, href: '#rute', anchor: true },
     { label: T.navFaq, href: '#faq', anchor: true },
     { label: T.navKota, href: localeHref(locale, 'sewa-mobil') },
-    { label: T.navBlog, href: localeHref(locale, 'blog') },
+    { label: T.navBlog, href: blogHref() },
   ];
 
   return (

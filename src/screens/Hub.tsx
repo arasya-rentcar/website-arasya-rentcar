@@ -9,7 +9,7 @@ import { WaLink } from '@/components/WaLink';
 import { HubDirectory, type HubCard } from '@/components/hub/HubDirectory';
 import { CONTAINER_TIGHT, CTA_PRIMARY, CTA_WA, CHIP_DARK, EYEBROW_BADGE, GRID_AUTOFIT } from '@/components/sections/styles';
 import { tLanding } from '@/lib/i18n';
-import { localeHref } from '@/lib/localize';
+import { blogHref, cityHref, localeHref } from '@/lib/localize';
 import { fleet as fleetOf, formatIdr, official as officialOf, waHref } from '@/lib/shared';
 import type { Locale, Location, Site } from '@/types';
 
@@ -53,7 +53,7 @@ export function Hub({ locations, site, locale }: HubProps) {
     key: l.key,
     name: l.name,
     code: l.code,
-    href: localeHref(locale, l.slug),
+    href: cityHref(l, locale),
     serviceLine: l.serviceLine,
     typeLabel: typeLabels[l.pageType] ?? typeLabels.city,
     country: l.country,
@@ -64,7 +64,7 @@ export function Hub({ locations, site, locale }: HubProps) {
     { label: t.navBeranda, href: localeHref(locale) },
     { label: en ? 'Service Cities' : 'Kota Layanan', href: '#kota', anchor: true },
     { label: 'Travel', href: localeHref(locale, 'travel') },
-    { label: 'Blog', href: localeHref(locale, 'blog') },
+    { label: 'Blog', href: blogHref() },
   ];
 
   const wa = (ref: string, msg = WA_GENERAL) => waHref(off.waPrimary, msg, ref);
@@ -278,7 +278,7 @@ export function Hub({ locations, site, locale }: HubProps) {
             rights: t.footRights,
             otherCities: t.footExplore,
           }}
-          otherCities={locations.map((l) => ({ key: l.key, name: l.name, slug: l.slug, href: localeHref(locale, l.slug) }))}
+          otherCities={locations.map((l) => ({ key: l.key, name: l.name, slug: l.slug, href: cityHref(l, locale) }))}
         />
       </div>
 

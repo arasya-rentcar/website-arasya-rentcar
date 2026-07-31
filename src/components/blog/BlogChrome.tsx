@@ -1,7 +1,7 @@
 ﻿import Link from 'next/link';
 import { WaGlyph } from '@/components/icons';
 import { WaLink } from '@/components/WaLink';
-import { localeHref } from '@/lib/localize';
+import { blogHref, localeHref } from '@/lib/localize';
 import type { Official } from '@/lib/shared';
 import type { Locale } from '@/types';
 
@@ -32,7 +32,7 @@ export function BlogHeader({ locale, waHref }: { locale: Locale; waHref: string 
           gap: 12,
         }}
       >
-        <Link href={localeHref(locale, 'blog')} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <Link href={blogHref()} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 'var(--ar-text-lg)', fontWeight: 'var(--ar-weight-bold)', letterSpacing: '0.02em', color: 'var(--ar-blue-950)' }}>
             ARASYA
           </span>

@@ -60,6 +60,56 @@ for (const loc of locs) {
   ok(`${new URL(loc).pathname} → ${s}`, s === 200, s === 200 ? '' : `expected 200`);
 }
 
+/*
+ * Every internal link the pages actually render.
+ *
+ * The sitemap and the hreflang set are generated from `hasEnLocation` /
+ * `hasEnPost`, so they were always honest — and that is exactly why checking
+ * only those two passed while every English page shipped with its whole city
+ * grid 404ing. The rendering layer built hrefs with `localeHref(locale, l.slug)`,
+ * prefixing /en onto Indonesian slugs to reach pages that were never generated.
+ *
+ * Nothing short of following the rendered anchors catches that class of bug, so
+ * this crawls them. Sitemap pages are the seeds; any internal href found on one
+ * is checked once, wherever it points.
+ */
+console.log('\ninternal links');
+{
+  const checked = new Map<string, number>();
+  const brokenBy = new Map<string, string[]>();
+
+  for (const loc of locs) {
+    const page = new URL(loc).pathname;
+    const html = await (await fetch(local(loc))).text();
+
+    const hrefs = new Set(
+      [...html.matchAll(/href="(\/[^"#?]*)/g)]
+        .map((m) => m[1])
+        .filter((h) => !h.startsWith('/_next/') && !h.startsWith('//'))
+    );
+
+    for (const href of hrefs) {
+      let s = checked.get(href);
+      if (s === undefined) {
+        s = await status(ORIGIN + href);
+        checked.set(href, s);
+      }
+      if (s !== 200) brokenBy.set(href, [...(brokenBy.get(href) ?? []), page]);
+    }
+  }
+
+  for (const [href, pages] of brokenBy) {
+    // Report where it was found, not just what broke — a dead href in shared
+    // chrome is one fix, the same href in one template is a different one.
+    ok(`${href} → ${checked.get(href)}`, false, `linked from ${pages.join(', ')}`);
+  }
+  ok(
+    `${checked.size} distinct internal links resolve`,
+    brokenBy.size === 0,
+    `${brokenBy.size} dead`
+  );
+}
+
 console.log('\nhreflang alternates');
 const seen = new Set<string>();
 for (const loc of locs) {
@@ -105,6 +155,32 @@ console.log('\nmeta robots');
       `${new URL(loc).pathname} ${ALLOW_INDEXING ? 'is indexable' : 'sends noindex'}`,
       ALLOW_INDEXING ? !noindex : noindex
     );
+  }
+}
+
+/*
+ * Link previews. Eleven of twelve pages once had no og:image at all, which is
+ * invisible from inside the site and only shows up when someone pastes the link
+ * into WhatsApp — the channel this business actually runs on.
+ */
+console.log('\nog:image');
+{
+  const seenImg = new Map<string, number>();
+  for (const loc of locs) {
+    const html = await (await fetch(local(loc))).text();
+    const m = html.match(/<meta property="og:image" content="([^"]+)"/);
+    if (!m) {
+      ok(`${new URL(loc).pathname} has og:image`, false, 'none emitted');
+      continue;
+    }
+    const href = m[1];
+    let s = seenImg.get(href);
+    if (s === undefined) {
+      s = await status(local(href));
+      seenImg.set(href, s);
+    }
+    // A card that 404s is worse than none: the crawler caches the miss.
+    ok(`${new URL(loc).pathname} og:image resolves`, s === 200, `${href} → ${s}`);
   }
 }
 

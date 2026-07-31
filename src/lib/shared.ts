@@ -18,10 +18,12 @@ import type {
   BankAccount,
   FaqItem,
   FleetUnit,
+  Locale,
   Location,
   Site,
   TrustCard,
 } from '@/types';
+import { cityHref } from './localize';
 
 const digitsOf = (t: string | undefined | null): string => String(t || '').replace(/\D/g, '');
 
@@ -375,11 +377,20 @@ export interface OtherCityLink {
 /**
  * Footer "Kota Layanan Lain". Without these cross-links deep city pages never
  * get crawled — see PSEO-HANDOFF "Internal linking (required for pSEO)".
+ *
+ * `href` is authoritative: it comes from `cityHref`, which is the only thing
+ * that knows whether an entry has a page in this locale. It used to be built
+ * here as '/' + slug and then thrown away and rebuilt by SiteFooter, so the rule
+ * lived in two places and the footer's copy of it was the wrong one.
  */
-export function otherCities(locations: Location[], currentKey: string): OtherCityLink[] {
+export function otherCities(
+  locations: Location[],
+  currentKey: string,
+  locale: Locale = 'id'
+): OtherCityLink[] {
   return locations
     .filter((l) => l.key !== currentKey)
-    .map((l) => ({ key: l.key, name: l.name, slug: l.slug, href: '/' + l.slug }));
+    .map((l) => ({ key: l.key, name: l.name, slug: l.slug, href: cityHref(l, locale) }));
 }
 
 /* --------------------------------------------------------------- booking */

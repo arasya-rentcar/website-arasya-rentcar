@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Chip } from '@/design-system';
 import { ArrowGlyph } from '@/components/icons';
-import { localeHref } from '@/lib/localize';
+import { postHref } from '@/lib/localize';
 import type { Locale, Post } from '@/types';
 
 /**
@@ -22,7 +22,7 @@ export function PostFilter({ posts, locale }: { posts: Post[]; locale: Locale })
   const filtered = cat === all ? posts : posts.filter((p) => p.category === cat);
   const [featured, ...rest] = filtered;
 
-  const href = (p: Post) => localeHref(locale, p.slug);
+  const href = (p: Post) => postHref(p, locale);
 
   return (
     <section data-screen-label="Daftar Artikel" style={{ borderBottom: '1px solid var(--ar-color-border)' }}>

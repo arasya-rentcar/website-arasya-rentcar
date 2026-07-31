@@ -12,7 +12,7 @@ import { WaFab } from '@/components/layout/WaFab';
 import { WaLink } from '@/components/WaLink';
 import { CONTAINER, CONTAINER_TIGHT, CTA_WA, EYEBROW_BADGE, GRID_AUTOFIT } from '@/components/sections/styles';
 import { t as tStr } from '@/lib/i18n';
-import { localeHref } from '@/lib/localize';
+import { blogHref, cityHref, localeHref } from '@/lib/localize';
 import { fleet as fleetOf, formatIdr, official as officialOf, slugify, trustItems, waHref } from '@/lib/shared';
 import type { Locale, Location, Site } from '@/types';
 
@@ -64,7 +64,7 @@ export function Home({ locations, site, locale }: HomeProps) {
     { label: T.navLayanan, href: '#layanan', anchor: true },
     { label: T.navKota, href: '#kota', anchor: true },
     { label: T.navTravel, href: localeHref(locale, 'travel') },
-    { label: T.navBlog, href: localeHref(locale, 'blog') },
+    { label: T.navBlog, href: blogHref() },
   ];
 
   return (
@@ -290,7 +290,7 @@ export function Home({ locations, site, locale }: HomeProps) {
                 <Link
                   key={l.key}
                   className="ar-reveal card-lift-bordered"
-                  href={localeHref(locale, l.slug)}
+                  href={cityHref(l, locale)}
                   data-cta="home-kota"
                   data-city={l.code}
                   style={{ display: 'flex', flexDirection: 'column', gap: 10, background: '#ffffff', border: '1px solid var(--ar-color-border)', borderRadius: 'var(--ar-radius-lg)', padding: 'var(--ar-space-5)', textDecoration: 'none' }}
@@ -396,7 +396,7 @@ export function Home({ locations, site, locale }: HomeProps) {
           locale={locale}
           official={off}
           labels={{ contact: T.footContact, explore: T.footExplore, rights: T.footRights, otherCities: T.navKota }}
-          otherCities={locations.map((l) => ({ key: l.key, name: l.name, slug: l.slug, href: localeHref(locale, l.slug) }))}
+          otherCities={locations.map((l) => ({ key: l.key, name: l.name, slug: l.slug, href: cityHref(l, locale) }))}
         />
       </div>
 

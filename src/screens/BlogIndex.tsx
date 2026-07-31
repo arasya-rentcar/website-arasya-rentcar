@@ -4,7 +4,7 @@ import { Reveals } from '@/components/Reveal';
 import { BlogHeader, BlogFooter, BlogFab } from '@/components/blog/BlogChrome';
 import { PostFilter } from '@/components/blog/PostFilter';
 import { WaLink } from '@/components/WaLink';
-import { localeHref } from '@/lib/localize';
+import { cityHref } from '@/lib/localize';
 import { official as officialOf, waHref } from '@/lib/shared';
 import type { Locale, Location, Post, Site } from '@/types';
 
@@ -25,7 +25,7 @@ export function BlogIndex({ posts, locations, site, locale }: BlogIndexProps) {
   const en = locale === 'en';
   const wa = (msg: string) => waHref(off.waPrimary, msg);
 
-  const cityLinks = locations.map((l) => ({ key: l.key, name: l.name, href: localeHref(locale, l.slug) }));
+  const cityLinks = locations.map((l) => ({ key: l.key, name: l.name, href: cityHref(l, locale) }));
 
   return (
     <>

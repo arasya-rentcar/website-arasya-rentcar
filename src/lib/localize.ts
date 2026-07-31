@@ -103,6 +103,47 @@ export function localeHref(locale: Locale, path = ''): string {
 }
 
 /**
+ * Href for a city entry — the only correct way to link to one.
+ *
+ * `localeHref(locale, l.slug)` is the trap this replaces: it prefixes /en onto
+ * the *Indonesian* slug, producing a URL that `generateStaticParams` never
+ * emitted. Every English page shipped with its whole city grid 404ing that way,
+ * while the sitemap and hreflang stayed clean — they went through
+ * `hasEnLocation` — so nothing caught it.
+ *
+ * A null slug means the entry has no page in this locale, so the link falls back
+ * to the Indonesian URL. That page exists and carries the same information; it
+ * is simply not translated yet, which beats a 404 by a wide margin.
+ *
+ * This resolves itself. The moment Content Studio fills an entry's EN fields
+ * `hasEnLocation` turns true, /en/{slugEn} gets generated, and every link here
+ * switches over with no code change.
+ */
+export function cityHref(l: Location, locale: Locale): string {
+  const slug = localeSlug(l, locale);
+  return slug === null ? localeHref('id', l.slug) : localeHref(locale, slug);
+}
+
+/** Same rule for articles. */
+export function postHref(p: Post, locale: Locale): string {
+  const slug = localePostSlug(p, locale);
+  return slug === null ? localeHref('id', p.slug) : localeHref(locale, slug);
+}
+
+/**
+ * The blog is Indonesian-only. There is no /en/blog route at all — not an
+ * untranslated one, none — so `localeHref('en', 'blog')` can never resolve.
+ *
+ * The nav item stays in both locales rather than being dropped from English: the
+ * navbar is meant to be identical on every page, and a link that lands on
+ * Indonesian copy is a smaller surprise than a nav that changes shape depending
+ * on which locale you are in.
+ */
+export function blogHref(): string {
+  return localeHref('id', 'blog');
+}
+
+/**
  * Absolute URL for canonical / OG / hreflang / JSON-LD.
  *
  * Only the site root keeps a trailing slash. The prototypes canonicalise the

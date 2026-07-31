@@ -19,7 +19,7 @@ import { StepsSection } from '@/components/sections/StepsSection';
 import { TestimonialsSection } from '@/components/sections/TestimonialsSection';
 import { TrustSection } from '@/components/sections/TrustSection';
 import { tLanding, withCity } from '@/lib/i18n';
-import { hasEnLocation, localeHref, localizeLocation, localizeSite } from '@/lib/localize';
+import { blogHref, hasEnLocation, localeHref, localizeLocation, localizeSite } from '@/lib/localize';
 import {
   bookingSteps,
   fleet as fleetOf,
@@ -149,7 +149,7 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
       : { label: t.navArmada, href: '#armada', anchor: true },
     { label: t.navFaq, href: '#faq', anchor: true },
     { label: t.navTravel, href: localeHref(locale, 'travel') },
-    { label: t.navBlog, href: localeHref(locale, 'blog') },
+    { label: t.navBlog, href: blogHref() },
   ];
 
   // Only offer the language pill when this entry exists in the other locale.
@@ -365,7 +365,7 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
           locale={locale}
           official={off}
           serviceLine={location.serviceLine}
-          otherCities={otherCities(allLocations, location.key)}
+          otherCities={otherCities(allLocations, location.key, locale)}
           labels={{
             contact: t.footContact,
             explore: t.footExplore,
