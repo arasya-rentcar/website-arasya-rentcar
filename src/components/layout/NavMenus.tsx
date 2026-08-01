@@ -26,6 +26,30 @@ export const DROP_LINK_STYLE = {
   textDecoration: 'none',
 } as const;
 
+/**
+ * The page you are on, inside a panel.
+ *
+ * A tinted row plus weight, not colour alone — colour by itself fails WCAG 1.4.1
+ * and is invisible to a good share of the audience. `aria-current="page"` on the
+ * anchor carries the same fact to a screen reader, which had no way of knowing
+ * it before.
+ */
+const DROP_LINK_CURRENT = {
+  background: 'var(--ar-blue-50)',
+  color: 'var(--ar-color-text)',
+  fontWeight: 'var(--ar-weight-semibold)',
+} as const;
+
+/** Props every nav anchor needs, so the current-page treatment cannot be
+ *  applied in one place and forgotten in another. */
+export function navLinkProps(link: { href: string; current?: boolean }, base: object) {
+  return {
+    href: link.href,
+    ...(link.current ? { 'aria-current': 'page' as const } : {}),
+    style: link.current ? { ...base, ...DROP_LINK_CURRENT } : base,
+  };
+}
+
 const DROP_HEADING = {
   margin: '6px 0 2px',
   padding: '0 12px',
@@ -54,6 +78,10 @@ export function NavDropdown({ item, linkStyle }: { item: NavItem; linkStyle: CSS
   return (
     <details className="site-nav-drop">
       <summary
+        // The dropdown holds the current page, so the closed summary carries the
+        // marker — otherwise the header goes blank about where you are on six of
+        // the twelve pages.
+        className={item.current ? 'site-nav-item is-current' : 'site-nav-item'}
         style={{
           ...linkStyle,
           display: 'inline-flex',
@@ -73,7 +101,7 @@ export function NavDropdown({ item, linkStyle }: { item: NavItem; linkStyle: CSS
           <div key={g.label}>
             <p style={DROP_SUBHEADING}>{g.label}</p>
             {g.items.map((n) => (
-              <Link key={n.href} href={n.href} className="js-nav-close" style={DROP_LINK_STYLE}>
+              <Link key={n.href} className="js-nav-close" {...navLinkProps(n, DROP_LINK_STYLE)}>
                 {n.label}
               </Link>
             ))}
@@ -81,9 +109,8 @@ export function NavDropdown({ item, linkStyle }: { item: NavItem; linkStyle: CSS
         ))}
         {item.groupsFooter && (
           <Link
-            href={item.groupsFooter.href}
             className="js-nav-close"
-            style={{
+            {...navLinkProps(item.groupsFooter, {
               ...DROP_LINK_STYLE,
               marginTop: 4,
               paddingTop: 10,
@@ -91,7 +118,7 @@ export function NavDropdown({ item, linkStyle }: { item: NavItem; linkStyle: CSS
               borderRadius: 0,
               color: 'var(--ar-color-primary)',
               fontWeight: 'var(--ar-weight-semibold)',
-            }}
+            })}
           >
             {item.groupsFooter.label}
           </Link>
@@ -180,9 +207,8 @@ export function NavBurger({
                   {g.items.map((n) => (
                     <Link
                       key={n.href}
-                      href={n.href}
                       className="js-nav-close"
-                      style={{ ...DROP_LINK_STYLE, paddingLeft: 22 }}
+                      {...navLinkProps(n, { ...DROP_LINK_STYLE, paddingLeft: 22 })}
                     >
                       {n.label}
                     </Link>
@@ -191,16 +217,19 @@ export function NavBurger({
               ))}
               {it.groupsFooter && (
                 <Link
-                  href={it.groupsFooter.href}
                   className="js-nav-close"
-                  style={{ ...DROP_LINK_STYLE, paddingLeft: 22, color: 'var(--ar-color-primary)' }}
+                  {...navLinkProps(it.groupsFooter, {
+                    ...DROP_LINK_STYLE,
+                    paddingLeft: 22,
+                    color: 'var(--ar-color-primary)',
+                  })}
                 >
                   {it.groupsFooter.label}
                 </Link>
               )}
             </div>
           ) : (
-            <Link key={'m' + it.href + it.label} href={it.href} className="js-nav-close" style={DROP_LINK_STYLE}>
+            <Link key={'m' + it.href + it.label} className="js-nav-close" {...navLinkProps(it, DROP_LINK_STYLE)}>
               {it.label}
             </Link>
           )

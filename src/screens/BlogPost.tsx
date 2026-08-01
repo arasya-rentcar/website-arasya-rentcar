@@ -41,6 +41,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
         <BlogHeader
           locale={locale}
           locations={locations}
+          activePath={postHref(post, locale)}
           waHref={wa(
             en
               ? 'Hello Arasya, I would like to ask about your chauffeured car rental. (ref: blog-nav)'

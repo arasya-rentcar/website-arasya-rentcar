@@ -100,7 +100,13 @@ export function SiteHeader({
               it.groups?.length ? (
                 <NavDropdown key={it.href + it.label} item={it} linkStyle={LINK_STYLE} />
               ) : (
-                <Link key={it.href + it.label} href={it.href} style={LINK_STYLE}>
+                <Link
+                  key={it.href + it.label}
+                  href={it.href}
+                  className={it.current ? 'site-nav-item is-current' : 'site-nav-item'}
+                  {...(it.current ? { 'aria-current': 'page' as const } : {})}
+                  style={LINK_STYLE}
+                >
                   {it.label}
                 </Link>
               )

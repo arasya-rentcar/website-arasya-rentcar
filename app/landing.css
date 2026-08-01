@@ -103,6 +103,45 @@
   background: var(--ar-blue-50);
 }
 
+/* ------------------------------------------------------ current page marker */
+
+/*
+ * The bar had no way of saying which page you were on.
+ *
+ * Weight plus an underline, not colour alone — WCAG 1.4.1 forbids colour as the
+ * only carrier, and a rule under the label survives both colour-blindness and
+ * the translucent backdrop the header sits on. `aria-current="page"` on the same
+ * element tells a screen reader the identical fact.
+ *
+ * The underline is a pseudo-element rather than border-bottom so it does not
+ * change the item's height and shift the whole bar by 2px on the active page.
+ */
+.site-nav-item {
+  position: relative;
+}
+
+.site-nav-item.is-current {
+  color: var(--ar-color-text);
+  font-weight: var(--ar-weight-semibold);
+}
+
+.site-nav-item.is-current::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ar-color-primary);
+}
+
+/* The caret sits inside the summary, so the rule would otherwise run under it
+   and read as though it belonged to the arrow. */
+.site-nav-drop > summary.is-current::after {
+  right: 14px;
+}
+
 /* ------------------------------------------------------- section reordering */
 
 /*

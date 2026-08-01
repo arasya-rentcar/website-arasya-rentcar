@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ArasyaProvider } from '@/design-system';
+import { NavAutoClose } from '@/components/layout/NavAutoClose';
 import { ALLOW_INDEXING } from '@/lib/indexing';
 import './globals.css';
 import './landing.css';
@@ -19,6 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id">
       <body>
         <ArasyaProvider>{children}</ArasyaProvider>
+        {/* Mounted once here rather than by each screen. Four of the six mounted
+            it and the two blog screens did not, so the burger added to the blog
+            header never closed on a link click. A behaviour that belongs to the
+            header should not be something every page has to remember. */}
+        <NavAutoClose />
       </body>
     </html>
   );

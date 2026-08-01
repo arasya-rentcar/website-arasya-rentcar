@@ -19,15 +19,18 @@ export function BlogHeader({
   locale,
   waHref,
   locations,
+  activePath,
 }: {
   locale: Locale;
   waHref: string;
   locations: Location[];
+  /** `/blog` on the index, `/blog/{slug}` on an article. */
+  activePath: string;
 }) {
   // The same four items as every other page. The blog keeps its lighter chrome —
   // wordmark on white rather than the full logo bar — but not its own idea of
   // what the site's sections are.
-  const nav = siteNav(locale, locations);
+  const nav = siteNav(locale, locations, activePath);
   return (
     <header
       style={{
@@ -70,7 +73,13 @@ export function BlogHeader({
               it.groups?.length ? (
                 <NavDropdown key={it.label} item={it} linkStyle={BLOG_NAV_LINK} />
               ) : (
-                <Link key={it.href + it.label} href={it.href} style={BLOG_NAV_LINK}>
+                <Link
+                  key={it.href + it.label}
+                  href={it.href}
+                  className={it.current ? 'site-nav-item is-current' : 'site-nav-item'}
+                  {...(it.current ? { 'aria-current': 'page' as const } : {})}
+                  style={BLOG_NAV_LINK}
+                >
                   {it.label}
                 </Link>
               )

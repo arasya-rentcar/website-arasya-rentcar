@@ -4,7 +4,7 @@ import { Reveals } from '@/components/Reveal';
 import { BlogHeader, BlogFooter, BlogFab } from '@/components/blog/BlogChrome';
 import { PostFilter } from '@/components/blog/PostFilter';
 import { WaLink } from '@/components/WaLink';
-import { cityHref } from '@/lib/localize';
+import { blogHref, cityHref } from '@/lib/localize';
 import { official as officialOf, waHref } from '@/lib/shared';
 import type { Locale, Location, Post, Site } from '@/types';
 
@@ -33,6 +33,7 @@ export function BlogIndex({ posts, locations, site, locale }: BlogIndexProps) {
         <BlogHeader
           locale={locale}
           locations={locations}
+          activePath={blogHref()}
           waHref={wa(
             en
               ? 'Hello Arasya, I would like to ask about your chauffeured car rental. (ref: blog-index-nav)'

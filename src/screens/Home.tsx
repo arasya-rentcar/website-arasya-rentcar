@@ -61,7 +61,7 @@ export function Home({ locations, site, locale }: HomeProps) {
     country: T.typeCountry,
   };
 
-  const nav = siteNav(locale, locations);
+  const nav = siteNav(locale, locations, localeHref(locale));
 
   return (
     <>

@@ -43,7 +43,7 @@ export function Travel({ travel, site, locations, locale }: TravelProps) {
   // The payment answer interpolates the live primary bank account.
   const faqItems = T.faqs.map((f) => ({ question: f.question, answer: fillBank(f.answer, off.bank) }));
 
-  const nav = siteNav(locale, locations);
+  const nav = siteNav(locale, locations, localeHref(locale, 'travel'));
 
   return (
     <>

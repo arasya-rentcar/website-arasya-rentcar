@@ -19,7 +19,7 @@ import { StepsSection } from '@/components/sections/StepsSection';
 import { TestimonialsSection } from '@/components/sections/TestimonialsSection';
 import { TrustSection } from '@/components/sections/TrustSection';
 import { tLanding, withCity } from '@/lib/i18n';
-import { hasEnLocation, localeHref, localizeLocation, localizeSite } from '@/lib/localize';
+import { cityHref, hasEnLocation, localeHref, localizeLocation, localizeSite } from '@/lib/localize';
 import { siteNav, type NavLink } from '@/lib/nav';
 import { PageAnchors } from '@/components/layout/PageAnchors';
 import {
@@ -143,10 +143,9 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
 
   /* -------------------------------------------------------------- chrome */
 
-  // Two in-page anchors plus the site-wide destinations. Capped at five: the
-  // desktop bar appears at 768px and has to fit the logo, the ID|EN pill and the
-  // CTA alongside these, so a sixth item overflows at that breakpoint.
-  const nav = siteNav(locale, allLocations);
+  // `raw`, not `location`: the active path is matched against what `cityHref`
+  // produces for this entry, and that is derived from the untranslated record.
+  const nav = siteNav(locale, allLocations, cityHref(raw, locale));
 
   // This page's own sections, in the order they appear. Country pages lead with
   // the city directory — it is the first thing a reader wants there, and it sits

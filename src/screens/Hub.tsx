@@ -61,7 +61,7 @@ export function Hub({ locations, site, locale }: HubProps) {
     priceLine: l.country === 'ID' ? fleetFrom : '',
   }));
 
-  const nav = siteNav(locale, locations);
+  const nav = siteNav(locale, locations, localeHref(locale, 'sewa-mobil'));
 
   const wa = (ref: string, msg = WA_GENERAL) => waHref(off.waPrimary, msg, ref);
 

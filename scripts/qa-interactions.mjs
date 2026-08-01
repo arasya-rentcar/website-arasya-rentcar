@@ -249,6 +249,79 @@ await go('/sewa-mobil-bogor');
   ok('menu links travel and blog', areas.some((h) => /travel$/.test(h)) && areas.some((h) => /blog$/.test(h)));
 }
 
+/* ---------------------------------------------------------- menu dismissal */
+
+/*
+ * Native <details> opens and closes from its summary and does nothing else: it
+ * stays open when you click the page, and when you press Escape. Both were
+ * reported as "sangat tidak nyaman" and both are real — a menu that only closes
+ * from the control that opened it is not a menu.
+ */
+console.log('\nmenu dismissal');
+await go('/sewa-mobil-bogor');
+{
+  const open = () => evalIn(`document.querySelector('.site-nav-burger > summary').click(), true`);
+  const isOpen = () => evalIn(`!!document.querySelector('.site-nav-burger[open]')`);
+
+  await open();
+  await new Promise((r) => setTimeout(r, 250));
+  ok('opens from the summary', await isOpen());
+
+  // A press on the page, not on a link inside the menu.
+  await evalIn(`document.querySelector('h1').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })), true`);
+  await new Promise((r) => setTimeout(r, 250));
+  ok('closes on a press outside', (await isOpen()) === false);
+
+  await open();
+  await new Promise((r) => setTimeout(r, 250));
+  await evalIn(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true`);
+  await new Promise((r) => setTimeout(r, 250));
+  ok('closes on Escape', (await isOpen()) === false);
+  ok(
+    'Escape returns focus to the summary',
+    await evalIn(`document.activeElement === document.querySelector('.site-nav-burger > summary')`)
+  );
+
+  // Scoped: Escape must not collapse an FAQ item the reader is part-way through.
+  await evalIn(`document.querySelector('#faq details:not([open]) summary')?.click(), true`);
+  await new Promise((r) => setTimeout(r, 250));
+  const faqBefore = await evalIn(`document.querySelectorAll('#faq details[open]').length`);
+  await evalIn(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })), true`);
+  await new Promise((r) => setTimeout(r, 250));
+  const faqAfter = await evalIn(`document.querySelectorAll('#faq details[open]').length`);
+  ok(`Escape leaves the FAQ alone (${faqBefore} → ${faqAfter})`, faqAfter === faqBefore);
+}
+
+/* ----------------------------------------------------- current page marker */
+
+console.log('\ncurrent page is marked');
+{
+  for (const [path, expected] of [
+    ['/', 'Beranda'],
+    ['/travel', 'Travel'],
+    ['/blog', 'Blog'],
+    ['/blog/itinerari-puncak-satu-hari', 'Blog'],
+    ['/sewa-mobil', 'Area Layanan'],
+    ['/sewa-mobil-bogor', 'Area Layanan'],
+  ]) {
+    await go(path);
+    const marked = JSON.parse(
+      await evalIn(
+        `JSON.stringify([...document.querySelectorAll('header [aria-current="page"], header .is-current')]
+          .map(el => el.textContent.replace(/[▼▲]/g,'').trim()))`
+      )
+    );
+    ok(`${path} marks "${expected}" (${marked.join(', ') || 'nothing'})`, marked.includes(expected));
+  }
+
+  // A city page marks both the dropdown and the city inside it.
+  await go('/sewa-mobil-bogor');
+  const inPanel = await evalIn(
+    `!!document.querySelector('.site-nav-drop-panel a[aria-current="page"]')`
+  );
+  ok('the city itself is marked inside the dropdown', inPanel);
+}
+
 /* ------------------------------------------------- nav identical everywhere */
 
 // The owner's complaint was that the navbar changed from page to page. It is

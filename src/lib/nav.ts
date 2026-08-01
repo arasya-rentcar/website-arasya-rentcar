@@ -24,6 +24,8 @@ import { blogHref, cityHref, localeHref } from './localize';
 export interface NavLink {
   label: string;
   href: string;
+  /** This link is the page being viewed. Drives `aria-current` and the marker. */
+  current?: boolean;
 }
 
 export interface NavGroup {
@@ -45,10 +47,27 @@ export interface NavItem extends NavLink {
  * so the home market is both the commercial priority and the higher-volume
  * search target — it should not sit below Singapore in a menu.
  */
-export function siteNav(locale: Locale, locations: Location[]): NavItem[] {
+export function siteNav(locale: Locale, locations: Location[], activePath?: string): NavItem[] {
   const T = tStr(locale);
+  const hub = localeHref(locale, 'sewa-mobil');
+  const blog = blogHref();
 
-  const toLink = (l: Location): NavLink => ({ label: l.name, href: cityHref(l, locale) });
+  /**
+   * `activePath` is supplied by the screen rather than read from
+   * `usePathname()`. Each screen already knows which page it is, and taking it
+   * as data keeps every header a server component — a client hook here would
+   * pull the whole nav, and the six city links inside it, into the bundle.
+   *
+   * Articles mark the Blog item, not a separate one: `/blog/x` is inside the
+   * blog as far as a reader is concerned.
+   */
+  const isActive = (href: string) =>
+    activePath === href || (href === blog && Boolean(activePath?.startsWith(blog + '/')));
+
+  const toLink = (l: Location): NavLink => {
+    const href = cityHref(l, locale);
+    return { label: l.name, href, current: isActive(href) };
+  };
   const domestic = locations.filter((l) => l.country === 'ID').map(toLink);
   const overseas = locations.filter((l) => l.country !== 'ID').map(toLink);
 
@@ -56,19 +75,30 @@ export function siteNav(locale: Locale, locations: Location[]): NavItem[] {
   if (domestic.length) groups.push({ label: T.navAreaDomestic, items: domestic });
   if (overseas.length) groups.push({ label: T.navAreaOverseas, items: overseas });
 
+  // The dropdown is "current" for any page it leads to — a city page or the hub
+  // — so the header still says where you are while the menu is closed and the
+  // marked city is out of sight.
+  const areaCurrent =
+    isActive(hub) || domestic.some((l) => l.current) || overseas.some((l) => l.current);
+
   return [
-    { label: T.navBeranda, href: localeHref(locale) },
+    { label: T.navBeranda, href: localeHref(locale), current: isActive(localeHref(locale)) },
     {
       label: T.navArea,
       // The summary of a <details> cannot itself be a link, so the hub is
       // reachable from the dropdown's footer instead. That is also the better
       // affordance: the six pages people actually want are one click away, and
       // the hub is there for anyone who wants to compare them side by side.
-      href: localeHref(locale, 'sewa-mobil'),
+      href: hub,
+      current: areaCurrent,
       groups,
-      groupsFooter: { label: T.navAllCities, href: localeHref(locale, 'sewa-mobil') },
+      groupsFooter: { label: T.navAllCities, href: hub, current: isActive(hub) },
     },
-    { label: T.navTravel, href: localeHref(locale, 'travel') },
-    { label: T.navBlog, href: blogHref() },
+    {
+      label: T.navTravel,
+      href: localeHref(locale, 'travel'),
+      current: isActive(localeHref(locale, 'travel')),
+    },
+    { label: T.navBlog, href: blog, current: isActive(blog) },
   ];
 }
