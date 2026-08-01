@@ -20,6 +20,7 @@ import type {
   TrustCard,
   DirectoryEntry,
   UnitClass,
+  LocationTranslation,
 } from '../src/types';
 
 const HANDOFF = resolve(process.cwd(), 'arasya-handoff');
@@ -411,6 +412,33 @@ export const UNIT_CLASSES: UnitClass[] = [
   },
 ];
 
+/**
+ * English content for the landing pages, authored in
+ * `content/i18n/locations.en.json`.
+ *
+ * JSON rather than a TypeScript constant like the others: at 2,754 words across
+ * six entries this is a translation document, not configuration, and the owner —
+ * who reads both languages — should be able to correct a sentence without
+ * opening a `.ts` file. It is diffable line by line and can be schema-checked.
+ *
+ * The flow is one-way and this is the *seed* source only. Once Content Studio is
+ * live the database is authoritative and this file becomes a historical record,
+ * exactly as `registry-snapshot.json` already is. Without that rule it turns
+ * into a second source of truth that silently disagrees with the first.
+ *
+ * `slugEn` sits alongside `en` because it is a column on `locations`, not part of
+ * the overlay — but it is the same editorial decision, made at the same time, so
+ * it lives in the same file.
+ */
+interface LocationEnEntry {
+  slugEn: string;
+  en: LocationTranslation;
+}
+
+export const LOCATIONS_EN: Record<string, LocationEnEntry> = JSON.parse(
+  readFileSync(resolve(process.cwd(), 'content/i18n/locations.en.json'), 'utf8')
+);
+
 /** EN overlay for the classes above, keyed by the Indonesian name. */
 export const UNIT_CLASSES_EN: Record<string, Partial<UnitClass>> = {
   'MPV 7 kursi': {
@@ -654,12 +682,13 @@ export function cityToRow(key: string, c: RawCity, sortOrder: number) {
     key,
     slug: c.slug,
     // The handoff carries no EN copy for landing templates — i18n.js only has
-    // home strings — so these are normally null. They are read from the input
-    // rather than hardcoded because the snapshot fallback re-seeds from content
-    // that HAS been translated: hardcoding null here would silently wipe every
-    // translation the CMS had filled in. Same reasoning for wa_phone below.
-    slug_en: c.slugEn ?? null,
-    en: c.en ?? null,
+    // home strings — so `c` normally has none. LOCATIONS_EN supplies it, and
+    // takes precedence: it is the authored translation, and it is what a
+    // re-seed must restore. Falling back to `c` rather than hardcoding null
+    // matters for the snapshot path, where `c` already carries whatever the last
+    // seed wrote. Same reasoning for wa_phone below.
+    slug_en: LOCATIONS_EN[key]?.slugEn ?? c.slugEn ?? null,
+    en: LOCATIONS_EN[key]?.en ?? c.en ?? null,
     name: c.name,
     code: c.code,
     page_type: c.pageType,

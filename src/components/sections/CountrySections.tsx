@@ -8,6 +8,15 @@ import { CONTAINER } from './styles';
 
 export interface DirectoryCard extends DirectoryEntry {
   waHref: string;
+  /**
+   * Whether this city is live, decided from the untranslated record.
+   *
+   * It used to be `status === 'Aktif'` here, read off the rendered text — which
+   * works exactly until the text is translated, at which point every city on the
+   * English page silently renders as "coming soon". A flag computed before
+   * localisation cannot be broken by a translator.
+   */
+  active: boolean;
 }
 
 interface DirectorySectionProps {
@@ -45,7 +54,7 @@ export function DirectorySection({ entries, cityCode, labels }: DirectorySection
           }}
         >
           {entries.map((d, i) => {
-            const active = d.status === 'Aktif';
+            const active = d.active;
             return (
               <div
                 key={i}

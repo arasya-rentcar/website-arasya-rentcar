@@ -34,6 +34,18 @@ const PAGES = [
   '/travel',
   '/blog',
   '/blog/itinerari-puncak-satu-hari',
+  // The English city pages are separate documents with their own text, and
+  // English runs longer than Indonesian — headings that fit on a 344px Fold in
+  // one language are not guaranteed to fit in the other. Left unchecked they
+  // would be the only pages on the site nothing measures.
+  '/en/car-rental-bogor',
+  '/en/car-rental-yogyakarta',
+  '/en/car-rental-bali',
+  '/en/car-rental-thailand',
+  '/en/car-rental-malaysia',
+  '/en/car-rental-singapore',
+  '/en/sewa-mobil',
+  '/en/travel',
 ];
 
 // CSS pixel sizes, not physical. The Fold's cover display is the tightest

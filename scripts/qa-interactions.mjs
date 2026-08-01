@@ -461,14 +461,39 @@ console.log('\ncampaign attribution');
 
 /* --------------------------------------------------------------- language */
 
+/*
+ * The pill appears exactly where the other locale exists — no more, no less.
+ *
+ * Derived from the snapshot rather than asserted page by page. This check used
+ * to say "an untranslated city page offers no EN pill" and named a city that has
+ * since been translated, so it failed on a change that was the whole point. What
+ * it was really protecting is the rule: offering a pill that leads to a 404 is
+ * worse than offering none, and hiding one that exists strands the reader in a
+ * language they did not choose.
+ */
 console.log('\nlanguage toggle');
-await go('/');
 {
-  const href = await evalIn(`document.querySelector('header a[href="/en"], header a[href^="/en"]')?.getAttribute('href') || ''`);
-  ok('home offers the EN pill', href.startsWith('/en'), href || '(none)');
-  await go('/sewa-mobil-bogor');
-  const cityPill = await evalIn(`!!document.querySelector('header a[href^="/en/"]')`);
-  ok('untranslated city page offers NO EN pill', cityPill === false);
+  const href = async () =>
+    evalIn(`document.querySelector('header a[hreflang]')?.getAttribute('href') || ''`);
+
+  await go('/');
+  ok('home offers the EN pill', (await href()).startsWith('/en'));
+
+  for (const l of snapshot.locations) {
+    const translated = Boolean(l.slugEn && l.en?.h1 && l.en?.metaTitle && l.en?.metaDescription);
+    await go(`/${l.slug}`);
+    const got = await href();
+    ok(
+      `/${l.slug} ${translated ? 'offers' : 'hides'} the EN pill`,
+      translated ? got === `/en/${l.slugEn}` : got === '',
+      `got "${got}"`
+    );
+    if (!translated) continue;
+    // And back again, from the English side.
+    await go(`/en/${l.slugEn}`);
+    const back = await href();
+    ok(`/en/${l.slugEn} points back at the Indonesian page`, back === `/${l.slug}`, `got "${back}"`);
+  }
 }
 
 console.log(`\n${'─'.repeat(60)}`);

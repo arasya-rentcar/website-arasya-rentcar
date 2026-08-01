@@ -25,6 +25,7 @@ import {
 } from '../src/lib/hydrate';
 import {
   DESTINATION_MEDIA,
+  LOCATIONS_EN,
   OVERSEAS_TRUST,
   REAL_TESTIMONIALS,
   UNIT_CLASSES,
@@ -93,6 +94,13 @@ for (const [k, raw] of Object.entries(cities)) {
   // WhatsApp routing is a post-handoff field: `cities.js` has no counterpart, so
   // it can only be asserted against the map the seed reads from.
   if (WA_ROUTING[k]) expected.waPhone = WA_ROUTING[k];
+  // English content is authored in content/i18n/locations.en.json and injected
+  // by the seed, so — like the testimonials and the unit classes — it has to be
+  // asserted against the override rather than against the registry input.
+  if (LOCATIONS_EN[k]) {
+    expected.slugEn = LOCATIONS_EN[k].slugEn;
+    expected.en = LOCATIONS_EN[k].en;
+  }
 
   check(k, expected, actual);
 }
@@ -230,22 +238,67 @@ console.log('\nlocalization');
   );
   check('every ID class has an EN overlay', [], site.genericUnits.filter((u) => !UNIT_CLASSES_EN[u.name]));
 
-  // Untranslated locations must report no EN content and pass through unchanged.
   const bogorRow = { ...cityToRow('bogor', cities.bogor, 0), updated_at: STAMP } as unknown as LocationRow;
   const bogor = toLocation(bogorRow);
-  check('untranslated location has no EN', false, hasEnLocation(bogor));
-  check('untranslated location passes through', bogor, localizeLocation(bogor, 'en'));
+
+  // Every entry is translated now, so the untranslated case has to be built
+  // rather than borrowed. It still has to hold: Content Studio will add cities
+  // that are Indonesian-only for a while, and they must not appear at /en/.
+  const bareRow = { ...bogorRow, slug_en: null, en: null } as unknown as LocationRow;
+  const bare = toLocation(bareRow);
+  check('untranslated location has no EN', false, hasEnLocation(bare));
+  check('untranslated location passes through', bare, localizeLocation(bare, 'en'));
 
   // A half-filled overlay fills only what it supplies.
   const partial = toLocation({
-    ...bogorRow,
+    ...bareRow,
     slug_en: 'car-rental-bogor',
     en: { h1: 'Car Rental Bogor with Driver', metaTitle: 'T', metaDescription: 'D' },
   } as unknown as LocationRow);
   const partialEn = localizeLocation(partial, 'en');
   check('overlaid field uses EN', 'Car Rental Bogor with Driver', partialEn.h1);
-  check('un-overlaid field keeps ID', bogor.heroSubtitle, partialEn.heroSubtitle);
+  check('un-overlaid field keeps ID', bare.heroSubtitle, partialEn.heroSubtitle);
   check('partial overlay counts as EN-ready', true, hasEnLocation(partial));
+
+  /* ---- the authored translations, and what the overlay must not destroy ---- */
+
+  check('every location is EN-ready', [], Object.keys(cities).filter((k) => !LOCATIONS_EN[k]));
+
+  const bogorEn = localizeLocation(bogor, 'en');
+  check('translated location is EN-ready', true, hasEnLocation(bogor));
+  check('h1 -> EN', 'Car Rental in Bogor with Driver', bogorEn.h1);
+
+  // The overlay replaces arrays wholesale, so `destinations` is merged by index
+  // instead. Without that, an English array carrying only prose would strip the
+  // photos and — worse — the licence attribution that the credit line is
+  // obliged to display.
+  check(
+    'destination photos survive translation',
+    bogor.destinations.map((d) => d.image),
+    bogorEn.destinations.map((d) => d.image)
+  );
+  check(
+    'image credits survive translation',
+    bogor.destinations.map((d) => d.imageCredit?.author ?? null),
+    bogorEn.destinations.map((d) => d.imageCredit?.author ?? null)
+  );
+  check('destination prose is translated', 'Bogor Botanical Gardens', bogorEn.destinations[0]?.name);
+
+  // A translated slug is a 404, and a translated preset loses the icon.
+  const thai = toLocation({ ...cityToRow('thailand', cities.thailand, 0), updated_at: STAMP } as unknown as LocationRow);
+  const thaiEn = localizeLocation(thai, 'en');
+  check(
+    'directory slugs are never translated',
+    thai.cityDirectory?.map((d) => d.slug),
+    thaiEn.cityDirectory?.map((d) => d.slug)
+  );
+  check(
+    'trust presets are never translated',
+    thai.trust?.map((t) => t.preset),
+    thaiEn.trust?.map((t) => t.preset)
+  );
+  check('directory prose is translated', 'Coming soon', thaiEn.cityDirectory?.[1]?.status);
+  check('trust prose is translated', 'Vetted Local Drivers', thaiEn.trust?.[0]?.title);
 }
 
 /* ------------------------------------------------- asset-reference coverage */

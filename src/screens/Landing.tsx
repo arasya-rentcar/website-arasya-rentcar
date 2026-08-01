@@ -127,8 +127,12 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
     };
   });
 
-  const directory = (location.cityDirectory ?? []).map((d) => ({
+  const directory = (location.cityDirectory ?? []).map((d, i) => ({
     ...d,
+    // From `raw`, not `location`: "Aktif" is display text and the English page
+    // shows "Active", so reading the status after localisation would mark every
+    // city as not-yet-served.
+    active: (raw.cityDirectory ?? [])[i]?.status === 'Aktif',
     waHref: wa(
       `Halo admin Arasya Rent Car, saya ingin menanyakan layanan sewa mobil dengan supir di ${d.name}, ${cityName}. Mohon dibantu. Terima kasih.`,
       `${cityCode}-kota-${slugify(d.name)}`

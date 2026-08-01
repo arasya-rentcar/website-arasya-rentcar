@@ -49,14 +49,60 @@ export function hasEnPost(p: Post): boolean {
   return Boolean(p.slugEn && p.en?.title && p.en?.metaTitle && p.en?.metaDescription);
 }
 
+/**
+ * Fields that are arrays of objects, where only some keys are translatable.
+ *
+ * A plain overlay replaces an array wholesale, which for these would be
+ * destructive rather than merely blunt:
+ *
+ *   - `destinations` carries `image` and `imageCredit`. The credit is a licence
+ *     obligation, so an English array that omitted it would drop attribution
+ *     from six cards — a breach, not a formatting bug.
+ *   - `cityDirectory` carries `slug`, which is a URL and must never be
+ *     translated. A translated slug is a 404.
+ *   - `trust` carries `preset`, which selects the icon.
+ *
+ * Merging element-wise by index means the English file holds only the prose,
+ * so there is nothing to keep in sync and nothing to lose. Extra entries on
+ * either side are kept: a partially translated list renders the translated part
+ * and leaves the rest Indonesian, which is the same rule the scalar overlay
+ * follows.
+ */
+const MERGE_BY_INDEX = ['destinations', 'routes', 'faqExtra', 'trust', 'cityDirectory'] as const;
+
+function mergeLists<T extends object>(base: T, patch: Partial<T>): Partial<T> {
+  const out: Record<string, unknown> = { ...patch };
+  for (const key of MERGE_BY_INDEX) {
+    const b = (base as Record<string, unknown>)[key];
+    const p = (patch as Record<string, unknown>)[key];
+    if (!Array.isArray(b) || !Array.isArray(p) || !p.length) continue;
+    out[key] = b.map((item, i) =>
+      p[i] && typeof p[i] === 'object' ? overlay(item as object, p[i] as object) : item
+    );
+    // A longer translated list than the original would mean the two have
+    // diverged; keep the extras rather than silently dropping them.
+    if (p.length > b.length) (out[key] as unknown[]).push(...p.slice(b.length));
+  }
+  return out as Partial<T>;
+}
+
 export function localizeLocation(l: Location, locale: Locale): Location {
   if (locale !== 'en' || !l.en) return l;
-  return overlay(l, l.en as Partial<Location>);
+  const patch = l.en as Partial<Location>;
+  return overlay(l, { ...patch, ...mergeLists(l, patch) });
 }
 
 export function localizePost(p: Post, locale: Locale): Post {
   if (locale !== 'en' || !p.en) return p;
-  return overlay(p, p.en as Partial<Post>);
+  const patch = p.en as Partial<Post>;
+  // `sections` is the same shape of problem: each has `heading`, `paragraphs`
+  // and an optional `list`, and a translation that omits `list` would drop the
+  // checklist from the article rather than leave it in Indonesian.
+  const sections =
+    Array.isArray(p.sections) && Array.isArray(patch.sections) && patch.sections.length
+      ? p.sections.map((s, i) => (patch.sections?.[i] ? overlay(s, patch.sections[i]) : s))
+      : patch.sections;
+  return overlay(p, { ...patch, ...(sections ? { sections } : {}) });
 }
 
 /**
