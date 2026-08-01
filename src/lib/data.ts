@@ -112,6 +112,21 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   return data ? toPost(data as unknown as PostRow) : null;
 }
 
+/** Resolves an EN article slug, for /en/blog/[slug]. Mirrors getPostBySlug. */
+export async function getPostBySlugEn(slug: string): Promise<Post | null> {
+  const full = slug.startsWith('blog/') ? slug : `blog/${slug}`;
+  if (USE_SNAPSHOT) return snapshotPosts.find((p) => p.slugEn === full) ?? null;
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_COLUMNS)
+    .eq('status', 'published')
+    .eq('slug_en', full)
+    .maybeSingle();
+  if (error) throw new Error(`getPostBySlugEn(${slug}): ${error.message}`);
+  return data ? toPost(data as unknown as PostRow) : null;
+}
+
 export async function getSite(): Promise<Site> {
   if (USE_SNAPSHOT) return snapshotSite;
   const supabase = createPublicClient();

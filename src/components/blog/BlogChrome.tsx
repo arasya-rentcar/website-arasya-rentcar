@@ -3,7 +3,7 @@ import { WaGlyph } from '@/components/icons';
 import { WaLink } from '@/components/WaLink';
 import { blogHref } from '@/lib/localize';
 import { siteNav } from '@/lib/nav';
-import { NavBurger, NavDropdown } from '@/components/layout/NavMenus';
+import { LangPill, NavBurger, NavDropdown } from '@/components/layout/NavMenus';
 import { OfficialPhones } from '@/components/OfficialPhones';
 import type { Official } from '@/lib/shared';
 // `Location` must be imported explicitly — the DOM lib declares a global of the
@@ -20,13 +20,17 @@ export function BlogHeader({
   waHref,
   locations,
   activePath,
+  altLocaleHref,
 }: {
   locale: Locale;
   waHref: string;
   locations: Location[];
   /** `/blog` on the index, `/blog/{slug}` on an article. */
   activePath: string;
+  /** This page in the other locale; omit to hide the pill. */
+  altLocaleHref?: string;
 }) {
+  const other: Locale = locale === 'id' ? 'en' : 'id';
   // The same four items as every other page. The blog keeps its lighter chrome —
   // wordmark on white rather than the full logo bar — but not its own idea of
   // what the site's sections are.
@@ -53,7 +57,7 @@ export function BlogHeader({
           gap: 12,
         }}
       >
-        <Link href={blogHref()} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <Link href={blogHref(locale)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontSize: 'var(--ar-text-lg)', fontWeight: 'var(--ar-weight-bold)', letterSpacing: '0.02em', color: 'var(--ar-blue-950)' }}>
             ARASYA
           </span>
@@ -90,11 +94,25 @@ export function BlogHeader({
               is hidden and nothing replaced it, so an article on a phone offered
               only the wordmark and a WhatsApp button. Same burger as everywhere
               else now. */}
-          {/* No footer slot: `siteNav` already leads with Beranda, and the
-              WhatsApp button beside this is visible at every width. */}
+          {altLocaleHref && (
+            <span className="site-nav-links">
+              <LangPill locale={locale} other={other} href={altLocaleHref} />
+            </span>
+          )}
+
+          {/* The CTA beside this is visible at every width and `siteNav` already
+              leads with Beranda, so the footer slot carries only the pill —
+              which is otherwise hidden with the desktop links below 768px. */}
           <NavBurger
             items={nav}
             label={locale === 'en' ? 'Open navigation menu' : 'Buka menu navigasi'}
+            footer={
+              altLocaleHref ? (
+                <div style={{ padding: '8px 12px 2px' }}>
+                  <LangPill locale={locale} other={other} href={altLocaleHref} />
+                </div>
+              ) : undefined
+            }
           />
 
           <WaLink

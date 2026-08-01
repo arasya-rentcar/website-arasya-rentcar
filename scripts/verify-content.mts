@@ -103,6 +103,21 @@ for (const l of locations) {
   (e.cityDirectory ?? []).forEach((x, i) => addEn(`${p}.dir[${i}]`, x.description));
 }
 
+for (const po of posts) {
+  const e = po.en;
+  if (!e) continue;
+  const p = `${po.slugEn ?? po.slug}[en]`;
+  addEn(`${p}.title`, e.title);
+  addEn(`${p}.metaTitle`, e.metaTitle);
+  addEn(`${p}.metaDescription`, e.metaDescription);
+  addEn(`${p}.excerpt`, e.excerpt);
+  (e.sections ?? []).forEach((s, i) => {
+    addEn(`${p}.s${i}.heading`, s.heading);
+    (s.paragraphs ?? []).forEach((x, j) => addEn(`${p}.s${i}.p${j}`, x));
+    (s.list ?? []).forEach((x, j) => addEn(`${p}.s${i}.l${j}`, x));
+  });
+}
+
 for (const l of locations) {
   const p = `${l.slug}`;
   add(`${p}.h1`, l.h1);

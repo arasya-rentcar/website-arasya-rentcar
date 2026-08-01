@@ -194,16 +194,14 @@ export function postHref(p: Post, locale: Locale): string {
 }
 
 /**
- * The blog is Indonesian-only. There is no /en/blog route at all — not an
- * untranslated one, none — so `localeHref('en', 'blog')` can never resolve.
+ * The blog index.
  *
- * The nav item stays in both locales rather than being dropped from English: the
- * navbar is meant to be identical on every page, and a link that lands on
- * Indonesian copy is a smaller surprise than a nav that changes shape depending
- * on which locale you are in.
+ * This used to return `/blog` unconditionally, because there was no /en/blog
+ * route at all and `localeHref('en', 'blog')` could only 404. Both locales now
+ * have one, so it behaves like every other link: English pages stay English.
  */
-export function blogHref(): string {
-  return localeHref('id', 'blog');
+export function blogHref(locale: Locale = 'id'): string {
+  return localeHref(locale, 'blog');
 }
 
 /**

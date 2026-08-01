@@ -7,7 +7,7 @@ import { Reveals } from '@/components/Reveal';
 import { BlogFab, BlogFooter, BlogHeader } from '@/components/blog/BlogChrome';
 import { WaLink } from '@/components/WaLink';
 import { PILL_WA } from '@/screens/BlogIndex';
-import { blogHref, cityHref, postHref } from '@/lib/localize';
+import { blogHref, cityHref, hasEnPost, localeHref, postHref } from '@/lib/localize';
 import { official as officialOf, officialFor, waHref } from '@/lib/shared';
 import type { Locale, Location, Post, Site } from '@/types';
 
@@ -45,6 +45,15 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
           locale={locale}
           locations={locations}
           activePath={postHref(post, locale)}
+          // Only where this article exists in the other locale — the same rule
+          // the city pages follow.
+          altLocaleHref={
+            hasEnPost(post)
+              ? locale === 'id'
+                ? localeHref('en', post.slugEn as string)
+                : localeHref('id', post.slug)
+              : undefined
+          }
           waHref={wa(
             en
               ? 'Hello Arasya, I would like to ask about your chauffeured car rental. (ref: blog-nav)'
@@ -59,7 +68,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
               aria-label="Breadcrumb"
               style={{ display: 'flex', flexWrap: 'wrap', gap: 7, fontSize: 'var(--ar-text-sm)', color: 'var(--ar-color-text-muted)' }}
             >
-              <Link href={blogHref()} style={{ color: 'var(--ar-blue-600)', textDecoration: 'none' }}>
+              <Link href={blogHref(locale)} style={{ color: 'var(--ar-blue-600)', textDecoration: 'none' }}>
                 Blog
               </Link>
               <span>/</span>

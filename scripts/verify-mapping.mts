@@ -26,6 +26,7 @@ import {
 import {
   DESTINATION_MEDIA,
   LOCATIONS_EN,
+  POSTS_EN,
   OVERSEAS_TRUST,
   REAL_TESTIMONIALS,
   UNIT_CLASSES,
@@ -119,6 +120,11 @@ for (const [k, raw] of Object.entries(posts)) {
   // Same strip as locations: no-op against the handoff, required against the
   // snapshot, which carries the database-owned fields.
   const expected = stripDbFields(rest as unknown as Record<string, unknown>);
+  // English articles are authored in content/i18n/posts.en.json — see LOCATIONS_EN.
+  if (POSTS_EN[k]) {
+    expected.slugEn = POSTS_EN[k].slugEn;
+    expected.en = POSTS_EN[k].en;
+  }
 
   check(k, expected, actual);
 }

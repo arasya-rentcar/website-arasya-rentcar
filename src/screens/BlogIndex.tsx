@@ -36,7 +36,9 @@ export function BlogIndex({ posts, locations, site, locale }: BlogIndexProps) {
         <BlogHeader
           locale={locale}
           locations={locations}
-          activePath={blogHref()}
+          activePath={blogHref(locale)}
+          // Both locales have an index, so the pill is unconditional here.
+          altLocaleHref={blogHref(en ? 'id' : 'en')}
           waHref={wa(
             en
               ? 'Hello Arasya, I would like to ask about your chauffeured car rental. (ref: blog-index-nav)'

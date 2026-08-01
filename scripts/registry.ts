@@ -21,6 +21,7 @@ import type {
   DirectoryEntry,
   UnitClass,
   LocationTranslation,
+  PostTranslation,
 } from '../src/types';
 
 const HANDOFF = resolve(process.cwd(), 'arasya-handoff');
@@ -439,6 +440,17 @@ export const LOCATIONS_EN: Record<string, LocationEnEntry> = JSON.parse(
   readFileSync(resolve(process.cwd(), 'content/i18n/locations.en.json'), 'utf8')
 );
 
+/** The articles, same arrangement. `slugEn` keeps the `blog/` prefix the
+ *  registry uses for every post slug. */
+interface PostEnEntry {
+  slugEn: string;
+  en: PostTranslation;
+}
+
+export const POSTS_EN: Record<string, PostEnEntry> = JSON.parse(
+  readFileSync(resolve(process.cwd(), 'content/i18n/posts.en.json'), 'utf8')
+);
+
 /** EN overlay for the classes above, keyed by the Indonesian name. */
 export const UNIT_CLASSES_EN: Record<string, Partial<UnitClass>> = {
   'MPV 7 kursi': {
@@ -735,10 +747,11 @@ export function postToRow(key: string, p: RawPost, sortOrder: number) {
   return {
     key,
     slug: p.slug,
-    // Read from the input, not hardcoded — see cityToRow: a snapshot re-seed
-    // must not wipe translations the CMS has filled in.
-    slug_en: p.slugEn ?? null,
-    en: p.en ?? null,
+    // POSTS_EN first, then the input — see cityToRow for the same reasoning: the
+    // authored translation wins, and a snapshot re-seed must not wipe anything
+    // the CMS has filled in.
+    slug_en: POSTS_EN[key]?.slugEn ?? p.slugEn ?? null,
+    en: POSTS_EN[key]?.en ?? p.en ?? null,
     title: p.title,
     category: p.category,
     city_key: p.cityKey,

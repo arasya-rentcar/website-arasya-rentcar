@@ -50,7 +50,7 @@ export interface NavItem extends NavLink {
 export function siteNav(locale: Locale, locations: Location[], activePath?: string): NavItem[] {
   const T = tStr(locale);
   const hub = localeHref(locale, 'sewa-mobil');
-  const blog = blogHref();
+  const blog = blogHref(locale);
 
   /**
    * `activePath` is supplied by the screen rather than read from

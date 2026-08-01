@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import type { NavItem } from '@/lib/nav';
+import type { Locale } from '@/types';
 
 /**
  * The two menu widgets, shared by `SiteHeader` and `BlogHeader`.
@@ -238,5 +239,46 @@ export function NavBurger({
         {footer}
       </div>
     </details>
+  );
+}
+
+/**
+ * ID | EN switcher. Only rendered when the page exists in both locales —
+ * offering a toggle that leads to a 404 is worse than offering none.
+ *
+ * Shared rather than owned by SiteHeader: the blog header had no pill at all,
+ * so an English article was a dead end for anyone wanting to switch back.
+ */
+export function LangPill({ locale, other, href }: { locale: Locale; other: Locale; href: string }) {
+  const cell = (active: boolean) =>
+    ({
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '4px 10px',
+      borderRadius: 999,
+      fontSize: 'var(--ar-text-xs)',
+      fontWeight: 'var(--ar-weight-semibold)',
+      letterSpacing: '0.04em',
+      textDecoration: 'none',
+      background: active ? 'var(--ar-blue-950)' : 'transparent',
+      color: active ? '#ffffff' : 'var(--ar-color-text-secondary)',
+    }) as const;
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: 2,
+        border: '1px solid var(--ar-color-border)',
+        borderRadius: 999,
+      }}
+    >
+      <span style={cell(true)}>{locale.toUpperCase()}</span>
+      <Link href={href} hrefLang={other} style={cell(false)}>
+        {other.toUpperCase()}
+      </Link>
+    </span>
   );
 }

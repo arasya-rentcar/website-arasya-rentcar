@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Locale } from '@/types';
 import { localeHref } from '@/lib/localize';
 import type { NavItem } from '@/lib/nav';
-import { DROP_LINK_STYLE, NavBurger, NavDropdown } from './NavMenus';
+import { DROP_LINK_STYLE, LangPill, NavBurger, NavDropdown } from './NavMenus';
 
 export type { NavItem };
 
@@ -155,40 +155,5 @@ export function SiteHeader({
         </nav>
       </div>
     </header>
-  );
-}
-
-/** ID | EN switcher. Only rendered when the page exists in both locales. */
-function LangPill({ locale, other, href }: { locale: Locale; other: Locale; href: string }) {
-  const cell = (active: boolean) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '4px 10px',
-      borderRadius: 999,
-      fontSize: 'var(--ar-text-xs)',
-      fontWeight: 'var(--ar-weight-semibold)',
-      letterSpacing: '0.04em',
-      textDecoration: 'none',
-      background: active ? 'var(--ar-blue-950)' : 'transparent',
-      color: active ? '#ffffff' : 'var(--ar-color-text-secondary)',
-    }) as const;
-
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 2,
-        padding: 2,
-        border: '1px solid var(--ar-color-border)',
-        borderRadius: 999,
-      }}
-    >
-      <span style={cell(true)}>{locale.toUpperCase()}</span>
-      <Link href={href} hrefLang={other} style={cell(false)}>
-        {other.toUpperCase()}
-      </Link>
-    </span>
   );
 }

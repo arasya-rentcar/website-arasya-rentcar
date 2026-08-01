@@ -494,6 +494,22 @@ console.log('\nlanguage toggle');
     const back = await href();
     ok(`/en/${l.slugEn} points back at the Indonesian page`, back === `/${l.slug}`, `got "${back}"`);
   }
+
+  // Articles follow the same rule. The blog header carried no pill at all until
+  // it had somewhere to point, which made an English article a dead end.
+  for (const po of snapshot.posts) {
+    const translated = Boolean(po.slugEn && po.en?.title && po.en?.metaTitle && po.en?.metaDescription);
+    await go(`/${po.slug}`);
+    const got = await href();
+    ok(
+      `/${po.slug} ${translated ? 'offers' : 'hides'} the EN pill`,
+      translated ? got === `/en/${po.slugEn}` : got === '',
+      `got "${got}"`
+    );
+    if (!translated) continue;
+    await go(`/en/${po.slugEn}`);
+    ok(`/en/${po.slugEn} points back`, (await href()) === `/${po.slug}`);
+  }
 }
 
 console.log(`\n${'─'.repeat(60)}`);

@@ -46,6 +46,8 @@ const PAGES = [
   '/en/car-rental-singapore',
   '/en/sewa-mobil',
   '/en/travel',
+  '/en/blog',
+  '/en/blog/puncak-one-day-itinerary',
 ];
 
 // CSS pixel sizes, not physical. The Fold's cover display is the tightest
