@@ -81,7 +81,7 @@ export function SiteHeader({
       >
         <Link
           href={localeHref(locale)}
-          aria-label="Beranda Arasya Rent Car"
+          aria-label={locale === 'en' ? 'Arasya Rent Car home' : 'Beranda Arasya Rent Car'}
           style={{ display: 'inline-flex', alignItems: 'center' }}
         >
           <Image

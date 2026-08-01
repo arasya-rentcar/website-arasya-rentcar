@@ -1,5 +1,6 @@
 ﻿import Link from 'next/link';
 import { AnalyticsBridge } from '@/components/AnalyticsBridge';
+import { MAIN_ID, SkipLink } from '@/components/layout/SkipLink';
 import { Reveals } from '@/components/Reveal';
 import { BlogHeader, BlogFooter, BlogFab } from '@/components/blog/BlogChrome';
 import { PostFilter } from '@/components/blog/PostFilter';
@@ -30,6 +31,8 @@ export function BlogIndex({ posts, locations, site, locale }: BlogIndexProps) {
   return (
     <>
       <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+        <SkipLink locale={locale} />
+
         <BlogHeader
           locale={locale}
           locations={locations}
@@ -41,7 +44,7 @@ export function BlogIndex({ posts, locations, site, locale }: BlogIndexProps) {
           )}
         />
 
-        <main style={{ flex: 1 }}>
+        <main id={MAIN_ID} style={{ flex: 1 }}>
           <section
             data-screen-label="Hero Blog"
             style={{ background: 'linear-gradient(150deg, var(--ar-blue-950) 0%, var(--ar-blue-900) 100%)', color: '#ffffff' }}

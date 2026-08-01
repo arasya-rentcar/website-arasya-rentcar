@@ -114,7 +114,7 @@ await send('Runtime.enable', {}, sessionId);
 const probeFor = (touch) => `(() => {
   const TOUCH = ${touch};
   const vw = document.documentElement.clientWidth;
-  const out = { vw, overflowX: document.documentElement.scrollWidth - vw, culprits: [], ratios: [], taps: [], clipped: [], order: null };
+  const out = { vw, overflowX: document.documentElement.scrollWidth - vw, culprits: [], ratios: [], taps: [], clipped: [], anchors: [], order: null };
 
   // Document order. These pages lay their sections out with flex \`order\`, which
   // silently reshuffles them if one sibling forgets to set it — the header shipped
@@ -141,6 +141,39 @@ const probeFor = (touch) => `(() => {
       };
     }
     void main;
+  }
+
+  // Every in-page anchor must land BELOW the sticky header, not behind it.
+  //
+  // Without \`scroll-padding-top\` all eleven of them arrived at y=0 with 59px of
+  // header on top, so the heading you jumped to was the one thing you could not
+  // see. Invisible to every other check here — no overflow, nothing clipped, the
+  // link works — and only findable by performing the jump and measuring.
+  {
+    const header = document.querySelector('header');
+    const headerH = header ? Math.round(header.getBoundingClientRect().height) : 0;
+    const anchors = [...document.querySelectorAll('a[href^="#"]')]
+      .map((a) => a.getAttribute('href').slice(1))
+      .filter((id) => id && document.getElementById(id));
+    const before = window.scrollY;
+
+    // \`scroll-behavior: smooth\` makes scrollIntoView() animate, so measuring
+    // straight after it reads a position part-way through the scroll rather than
+    // where the jump lands. The first version of this check did exactly that and
+    // passed against a build with no scroll-padding-top at all.
+    const prev = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
+
+    for (const id of [...new Set(anchors)]) {
+      const el = document.getElementById(id);
+      window.scrollTo(0, 0);
+      el.scrollIntoView();
+      const top = Math.round(el.getBoundingClientRect().top);
+      if (top < headerH) out.anchors.push({ id, top, headerH, hidden: headerH - top });
+    }
+
+    window.scrollTo(0, before);
+    document.documentElement.style.scrollBehavior = prev;
   }
 
   if (out.overflowX > 0) {
@@ -310,6 +343,7 @@ for (const dev of DEVICES) {
     if (o.ratios.length) issues.push(`${o.ratios.length} image ratio`);
     if (o.taps.length) issues.push(`${o.taps.length} small tap target`);
     if (o.clipped.length) issues.push(`${o.clipped.length} clipped text`);
+    if (o.anchors.length) issues.push(`${o.anchors.length} anchor behind header`);
     if (o.order && !o.order.headerFirst) issues.push('HEADER NOT AT TOP');
     if (o.order && !o.order.footerLast) issues.push('FOOTER NOT AT BOTTOM');
 
@@ -322,6 +356,8 @@ for (const dev of DEVICES) {
         console.log(
           `       order: header@${o.order.headerTop} firstSection@${o.order.firstSectionTop} footer@${o.order.footerTop}`
         );
+      for (const a of o.anchors)
+        console.log(`       anchor: #${a.id} lands at ${a.top}px, ${a.hidden}px under a ${a.headerH}px header`);
       for (const c of o.culprits) console.log(`       overflow: <${c.tag} class="${c.cls}"> right=${c.right} vw=${o.vw} "${c.txt}"`);
       for (const r of o.ratios) console.log(`       ratio: "${r.alt}" want ${r.want} got ${r.got} (${r.w}×${r.h})`);
       for (const t of o.taps)

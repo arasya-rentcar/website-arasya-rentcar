@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SectionHeading } from '@/design-system';
 import { AnalyticsBridge } from '@/components/AnalyticsBridge';
+import { MAIN_ID, SkipLink } from '@/components/layout/SkipLink';
 import { ArrowGlyph, CheckGlyph } from '@/components/icons';
 import { Reveals } from '@/components/Reveal';
 import { BlogFab, BlogFooter, BlogHeader } from '@/components/blog/BlogChrome';
@@ -38,6 +39,8 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
   return (
     <>
       <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+        <SkipLink locale={locale} />
+
         <BlogHeader
           locale={locale}
           locations={locations}
@@ -49,7 +52,7 @@ export function BlogPost({ post, related, locations, site, locale }: BlogPostPro
           )}
         />
 
-        <main style={{ flex: 1 }}>
+        <main id={MAIN_ID} style={{ flex: 1 }}>
           <article style={{ maxWidth: 768, margin: '0 auto', padding: 'clamp(36px, 6vw, 60px) clamp(20px, 4vw, 32px) 0' }}>
             <nav
               data-hero

@@ -1,5 +1,5 @@
 import { AnalyticsBridge } from '@/components/AnalyticsBridge';
-import { NavAutoClose } from '@/components/layout/NavAutoClose';
+import { MAIN_ID, SkipLink } from '@/components/layout/SkipLink';
 import { Reveals } from '@/components/Reveal';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
@@ -202,6 +202,8 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
           flexDirection: 'column',
         }}
       >
+        <SkipLink locale={locale} />
+
         <SiteHeader
           locale={locale}
           items={nav}
@@ -211,166 +213,179 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
           altLocaleHref={altHref}
         />
 
-        {isCountry ? (
-          variant === 'direktori' ? (
-            <HeroDirectory {...heroProps} />
+        {/*
+          A flex column, not a plain wrapper. Every section carries a flex
+          `order` and the variant rules in landing.css reorder them, so `main`
+          has to be the flex container they belong to — wrapping them in a plain
+          div would collapse the whole scheme into a single flex item.
+          `display: contents` would also preserve it, but it has a history of
+          dropping the landmark from the accessibility tree, which is the one
+          thing this element exists for.
+        */}
+        <main id={MAIN_ID} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+
+          {isCountry ? (
+            variant === 'direktori' ? (
+              <HeroDirectory {...heroProps} />
+            ) : (
+              <HeroConcierge {...heroProps} />
+            )
+          ) : variant === 'terang' ? (
+            <HeroLight {...heroProps} cityName={cityName} />
           ) : (
-            <HeroConcierge {...heroProps} />
-          )
-        ) : variant === 'terang' ? (
-          <HeroLight {...heroProps} cityName={cityName} />
-        ) : (
-          <HeroDark {...heroProps} />
-        )}
+            <HeroDark {...heroProps} />
+          )}
 
-        <PageAnchors items={pageAnchors} order={21} />
+          <PageAnchors items={pageAnchors} order={21} locale={locale} />
 
-        {isCountry && (
-          <DirectorySection
-            entries={directory}
-            countryName={cityName}
-            cityCode={cityCode}
-            labels={{
-              eyebrow: t.dirEyebrow,
-              title: t.dirTitle,
-              subtitle: withCity(t.dirSub, cityName),
-              ask: t.dirAsk,
-            }}
+          {isCountry && (
+            <DirectorySection
+              entries={directory}
+              countryName={cityName}
+              cityCode={cityCode}
+              labels={{
+                eyebrow: t.dirEyebrow,
+                title: t.dirTitle,
+                subtitle: withCity(t.dirSub, cityName),
+                ask: t.dirAsk,
+              }}
+            />
+          )}
+
+          <TrustSection
+            cards={trust}
+            official={off}
+            labels={{ copy: t.copy, copied: t.copied }}
           />
-        )}
 
-        <TrustSection
-          cards={trust}
-          official={off}
-          labels={{ copy: t.copy, copied: t.copied }}
-        />
-
-        <ServicesSection
-          services={services}
-          cityCode={cityCode}
-          labels={{ eyebrow: t.layananEyebrow, title: t.layananTitle, ask: t.layananAsk }}
-        />
-
-        {consultOnly ? (
-          <UnitClassesSection
-            units={site.genericUnits}
+          <ServicesSection
+            services={services}
             cityCode={cityCode}
-            waHref={wa(
-              isCountry
-                ? `Halo admin Arasya Rent Car, saya ingin menanyakan ketersediaan unit di ${cityName || noun}. Mohon dibantu. Terima kasih.`
-                : `Halo admin Arasya Rent Car, saya ingin menanyakan ketersediaan unit dan tarif di ${cityName || noun}. Mohon dibantu. Terima kasih.`,
-              `${cityCode}-units`
+            labels={{ eyebrow: t.layananEyebrow, title: t.layananTitle, ask: t.layananAsk }}
+          />
+
+          {consultOnly ? (
+            <UnitClassesSection
+              units={site.genericUnits}
+              cityCode={cityCode}
+              waHref={wa(
+                isCountry
+                  ? `Halo admin Arasya Rent Car, saya ingin menanyakan ketersediaan unit di ${cityName || noun}. Mohon dibantu. Terima kasih.`
+                  : `Halo admin Arasya Rent Car, saya ingin menanyakan ketersediaan unit dan tarif di ${cityName || noun}. Mohon dibantu. Terima kasih.`,
+                `${cityCode}-units`
+              )}
+              labels={{
+                eyebrow: t.unitsEyebrow,
+                // Country pages speak about a network of cities; a single overseas
+                // city speaks about itself.
+                title: isCountry ? t.unitsTitle : withCity(t.unitsCityTitle, cityName),
+                subtitle: isCountry ? t.unitsSub : withCity(t.unitsCitySub, cityName),
+                ask: isCountry ? t.unitsAsk : t.unitsCityAsk,
+                seats: t.unitsSeats,
+                luggage: t.unitsLuggage,
+                partnerNote: withCity(t.unitsPartnerNote, cityName || noun),
+              }}
+            />
+          ) : (
+            <FleetSection
+              cars={fleetCards}
+              cityName={cityName}
+              cityCode={cityCode}
+              noteDalamKota={site.fleetNotes.dalamKota}
+              noteAllin={site.fleetNotes.allin}
+              useLogoImages={carImages === 'with-logo'}
+              labels={{
+                eyebrow: t.armadaEyebrow,
+                title: t.armadaTitle,
+                subtitle: t.armadaSub,
+                tierDalamKota: t.tierDalamKota,
+                tierAllin: t.tierAllin,
+                capacitySuffix: t.capacitySuffix,
+                order: t.order,
+                contactPrice: t.contactPrice,
+                perDay: t.perDay,
+                per12h: t.per12h,
+                specialRate: t.specialRate,
+              }}
+            />
+          )}
+
+          <EditorialSection
+            editorial={location.editorial}
+            label={isCountry ? t.mengenalNegara : isRegion ? t.mengenalWilayah : t.mengenalKota}
+          />
+
+          <DestinationsSection
+            destinations={location.destinations}
+            cityName={cityName}
+            eyebrow={t.destEyebrow}
+            title={withCity(
+              isCountry ? t.destTitleCountry : isRegion ? t.destTitleIn : t.destTitleFrom,
+              cityName
             )}
-            labels={{
-              eyebrow: t.unitsEyebrow,
-              // Country pages speak about a network of cities; a single overseas
-              // city speaks about itself.
-              title: isCountry ? t.unitsTitle : withCity(t.unitsCityTitle, cityName),
-              subtitle: isCountry ? t.unitsSub : withCity(t.unitsCitySub, cityName),
-              ask: isCountry ? t.unitsAsk : t.unitsCityAsk,
-              seats: t.unitsSeats,
-              luggage: t.unitsLuggage,
-              partnerNote: withCity(t.unitsPartnerNote, cityName || noun),
-            }}
+            subtitle={location.destinationsSubtitle}
+            layout={isCountry ? 'plain' : variant === 'terang' ? 'list' : 'cards'}
+            order={isCountry ? 75 : 70}
           />
-        ) : (
-          <FleetSection
-            cars={fleetCards}
+
+          <RoutesSection
+            routes={location.routes}
+            cityName={cityName}
+            eyebrow={t.routesEyebrow}
+            title={withCity(isRegion ? t.routesTitleRegion : t.routesTitleCity, cityName)}
+            subtitle={t.routesSub}
+          />
+
+          <StepsSection
+            steps={steps}
+            eyebrow={t.stepsEyebrow}
+            title={t.stepsTitle}
+            subtitle={t.stepsSub}
+          />
+
+          {/* Country pages have no gallery in the prototypes. */}
+          {!isCountry && (
+            <GallerySection
+              images={site.gallery}
+              eyebrow={t.galleryEyebrow}
+              title={t.galleryTitle}
+              subtitle={t.gallerySub}
+            />
+          )}
+
+          <TestimonialsSection
+            testimonials={site.testimonials}
+            eyebrow={t.testiEyebrow}
+            title={t.testiTitle}
+            googleLabel={t.testiGoogle}
+          />
+
+          <FaqSection items={faq} eyebrow={t.faqEyebrow} title={t.faqTitle} />
+
+          <QuoteSection
             cityName={cityName}
             cityCode={cityCode}
-            noteDalamKota={site.fleetNotes.dalamKota}
-            noteAllin={site.fleetNotes.allin}
-            useLogoImages={carImages === 'with-logo'}
+            phone={phone}
+            phoneDisplay={off.phones[0]?.display ?? ''}
+            carOptions={carOptions}
             labels={{
-              eyebrow: t.armadaEyebrow,
-              title: t.armadaTitle,
-              subtitle: t.armadaSub,
-              tierDalamKota: t.tierDalamKota,
-              tierAllin: t.tierAllin,
-              capacitySuffix: t.capacitySuffix,
-              order: t.order,
-              contactPrice: t.contactPrice,
-              perDay: t.perDay,
-              per12h: t.per12h,
-              specialRate: t.specialRate,
+              eyebrow: t.quoteEyebrow,
+              title: t.quoteTitle,
+              subtitle: t.quoteSub,
+              orContact: t.quoteOrContact,
+              hours: t.quoteHours,
+              assurances: [...t.quoteAssurances],
             }}
           />
-        )}
 
-        <EditorialSection
-          editorial={location.editorial}
-          label={isCountry ? t.mengenalNegara : isRegion ? t.mengenalWilayah : t.mengenalKota}
-        />
-
-        <DestinationsSection
-          destinations={location.destinations}
-          cityName={cityName}
-          eyebrow={t.destEyebrow}
-          title={withCity(
-            isCountry ? t.destTitleCountry : isRegion ? t.destTitleIn : t.destTitleFrom,
-            cityName
-          )}
-          subtitle={location.destinationsSubtitle}
-          layout={isCountry ? 'plain' : variant === 'terang' ? 'list' : 'cards'}
-          order={isCountry ? 75 : 70}
-        />
-
-        <RoutesSection
-          routes={location.routes}
-          cityName={cityName}
-          eyebrow={t.routesEyebrow}
-          title={withCity(isRegion ? t.routesTitleRegion : t.routesTitleCity, cityName)}
-          subtitle={t.routesSub}
-        />
-
-        <StepsSection
-          steps={steps}
-          eyebrow={t.stepsEyebrow}
-          title={t.stepsTitle}
-          subtitle={t.stepsSub}
-        />
-
-        {/* Country pages have no gallery in the prototypes. */}
-        {!isCountry && (
-          <GallerySection
-            images={site.gallery}
-            eyebrow={t.galleryEyebrow}
-            title={t.galleryTitle}
-            subtitle={t.gallerySub}
+          <MapSection
+            mapsEmbed={site.settings.mapsEmbed}
+            addressLine={off.addressLine}
+            eyebrow={t.mapEyebrow}
+            title={isRegion || isCountry ? t.mapTitleRegion : t.mapTitleCity}
           />
-        )}
 
-        <TestimonialsSection
-          testimonials={site.testimonials}
-          eyebrow={t.testiEyebrow}
-          title={t.testiTitle}
-          googleLabel={t.testiGoogle}
-        />
-
-        <FaqSection items={faq} eyebrow={t.faqEyebrow} title={t.faqTitle} />
-
-        <QuoteSection
-          cityName={cityName}
-          cityCode={cityCode}
-          phone={phone}
-          phoneDisplay={off.phones[0]?.display ?? ''}
-          carOptions={carOptions}
-          labels={{
-            eyebrow: t.quoteEyebrow,
-            title: t.quoteTitle,
-            subtitle: t.quoteSub,
-            orContact: t.quoteOrContact,
-            hours: t.quoteHours,
-            assurances: [...t.quoteAssurances],
-          }}
-        />
-
-        <MapSection
-          mapsEmbed={site.settings.mapsEmbed}
-          addressLine={off.addressLine}
-          eyebrow={t.mapEyebrow}
-          title={isRegion || isCountry ? t.mapTitleRegion : t.mapTitleCity}
-        />
+        </main>
 
         <SiteFooter
           locale={locale}
@@ -389,7 +404,6 @@ export function Landing({ location: raw, site: rawSite, allLocations, locale, ca
 
       <WaFab href={wa(generalMsg, `${cityCode}-fab`)} cityCode={cityCode} />
       <AnalyticsBridge />
-      <NavAutoClose />
       <Reveals />
     </>
   );

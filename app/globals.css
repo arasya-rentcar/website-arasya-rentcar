@@ -8,8 +8,106 @@
  * CityHub). The --city-* values are page-scope tokens the prototypes define on
  * top of the design system: the orange CTA is intentionally NOT --ar-color-primary.
  */
+:root {
+  /*
+   * Height of the sticky header, measured: 10px padding + a clamp(26,4vw,32)
+   * logo + 10px + 1px border = 59px at desktop, less on narrow screens.
+   * Rounded up, because over-reserving costs a few pixels of whitespace while
+   * under-reserving hides the heading.
+   */
+  --ar-header-h: 60px;
+}
+
 html {
   scroll-behavior: smooth;
+
+  /*
+   * Every in-page anchor used to land underneath the sticky header. Measured
+   * across three page types: #armada, #layanan, #faq, #penawaran, #kota, #rute
+   * and #cara all arrived at y=0 with 59px of header on top of them, so the
+   * heading you jumped to was the one thing you could not see.
+   *
+   * Long-standing, but `PageAnchors` promoted anchor jumps to primary
+   * navigation, which turned a latent bug into the main way people move around
+   * a city page. One declaration fixes every anchor, including the ones in
+   * article bodies and any added later.
+   */
+  scroll-padding-top: calc(var(--ar-header-h) + 12px);
+}
+
+/*
+ * Motion is a preference, not a detail.
+ *
+ * `Reveal.tsx` already checks this before running GSAP, but the CSS did not:
+ * smooth scrolling stayed smooth and every hover transition kept its 200ms.
+ * Programmatic smooth scrolling is a recognised vestibular trigger, and it is
+ * exactly what the anchor strip now triggers on every jump.
+ *
+ * Durations go to 1ms rather than 0 so that anything listening for
+ * `transitionend` still fires and does not hang waiting for an event that never
+ * comes.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * A visible focus ring on everything, not just the design-system components.
+ *
+ * `.ar-btn`, `.ar-chip` and friends define one; the nav links, footer mesh,
+ * anchor strip and city cards are inline-styled anchors that fell back to the
+ * browser default. That is not invisible, but it is inconsistent and it is
+ * nobody's decision. `:focus-visible` keeps it to keyboard use, so a mouse
+ * click does not leave a ring behind.
+ */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--ar-color-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* On the navy footer and hero the blue ring has almost no contrast, so those
+   surfaces get the white one instead. */
+footer :where(a, button):focus-visible,
+[data-screen-label='Hero'] :where(a, button):focus-visible,
+[data-screen-label='Hero Travel'] :where(a, button):focus-visible,
+[data-screen-label='Verifikasi Resmi'] :where(a, button):focus-visible {
+  outline-color: #ffffff;
+}
+
+/*
+ * Skip link. The header now holds eleven tabbable items — logo, four nav
+ * entries, the language pill, the CTA — before any page content, on every page.
+ * Off-screen until focused, which is the one time it is useful.
+ */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  left: 8px;
+  top: 8px;
+  padding: 10px 16px;
+  background: var(--ar-blue-950);
+  color: #ffffff;
+  border-radius: var(--ar-radius-md);
+  font-size: var(--ar-text-sm);
+  font-weight: var(--ar-weight-semibold);
+  text-decoration: none;
 }
 
 body {

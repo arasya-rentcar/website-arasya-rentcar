@@ -1,4 +1,5 @@
 import type { NavLink } from '@/lib/nav';
+import type { Locale } from '@/types';
 
 /**
  * In-page section links, directly under the hero.
@@ -15,12 +16,23 @@ import type { NavLink } from '@/lib/nav';
  * Scrolls horizontally rather than wrapping: on a 344px Fold cover five items
  * would stack into three rows and push the hero off screen.
  */
-export function PageAnchors({ items, order }: { items: NavLink[]; order?: number }) {
+export function PageAnchors({
+  items,
+  order,
+  locale,
+}: {
+  items: NavLink[];
+  order?: number;
+  locale: Locale;
+}) {
   if (items.length < 2) return null;
 
   return (
     <nav
-      aria-label="Bagian halaman"
+      // Localised, not hardcoded Indonesian: this is the only name a screen
+      // reader has for the landmark, and it would announce "Bagian halaman" to
+      // someone reading the English site.
+      aria-label={locale === 'en' ? 'Page sections' : 'Bagian halaman'}
       style={{
         // Only set where the siblings use the ordering scheme. The landing
         // templates number every section (hero 20, trust 30 … footer 120), so
