@@ -14,9 +14,11 @@
     "snapshot": "tsx scripts/export-snapshot.mts",
     "verify:seo": "tsx scripts/verify-seo.mts",
     "verify:rls": "tsx scripts/verify-rls.mts",
+    "verify:admin": "tsx scripts/verify-admin.mts",
     "verify:content": "tsx scripts/verify-content.mts",
     "qa:devices": "node scripts/qa-devices.mjs",
     "qa:interactions": "node scripts/qa-interactions.mjs",
+    "qa:admin": "node scripts/qa-admin.mjs",
     "verify:routes": "tsx scripts/verify-routes.mts"
   },
   "dependencies": {

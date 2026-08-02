@@ -1,0 +1,176 @@
+/*
+ * Content Studio layout glue.
+ *
+ * Built from the --ar-* tokens, same rule as the rest of the project: no new
+ * `ar-*` class names, everything here is `cs-*`. The admin interface is a tool,
+ * not a marketing surface — it borrows the design system's type, colour and
+ * spacing so it feels like the same product, and nothing else.
+ */
+
+.cs-body {
+  min-height: 100dvh;
+  background: var(--ar-color-gray-50, #f8fafc);
+  color: var(--ar-color-gray-900, #0f172a);
+}
+
+/* ------------------------------------------------------------------ shell */
+
+.cs-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+.cs-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--ar-space-4, 16px);
+  padding: var(--ar-space-3, 12px) var(--ar-space-5, 20px);
+  background: #ffffff;
+  border-bottom: 1px solid var(--ar-color-gray-200, #e2e8f0);
+}
+
+.cs-brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ar-space-2, 8px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ar-color-primary, #046bd2);
+  text-decoration: none;
+}
+
+.cs-brand span {
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: var(--ar-color-gray-500, #64748b);
+  letter-spacing: 0;
+}
+
+.cs-topbar-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ar-space-3, 12px);
+  font-size: 0.8125rem;
+  color: var(--ar-color-gray-500, #64748b);
+}
+
+.cs-main {
+  width: min(1120px, 100%);
+  margin-inline: auto;
+  padding: var(--ar-space-6, 24px) var(--ar-space-5, 20px) var(--ar-space-10, 40px);
+}
+
+/* ------------------------------------------------------------------ login */
+
+.cs-login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--ar-space-5, 20px);
+}
+
+.cs-login-card {
+  width: min(400px, 100%);
+}
+
+.cs-login-title {
+  margin: 0 0 var(--ar-space-1, 4px);
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+}
+
+.cs-login-sub {
+  margin: 0 0 var(--ar-space-5, 20px);
+  font-size: 0.875rem;
+  color: var(--ar-color-gray-500, #64748b);
+  line-height: 1.5;
+}
+
+.cs-form {
+  display: grid;
+  gap: var(--ar-space-4, 16px);
+}
+
+/*
+ * Errors are announced, not just coloured. The sign-in failure is the one
+ * message on this page that changes after load, so a screen reader user who has
+ * already moved focus to the password field would otherwise never learn the
+ * attempt failed — hence role="alert" on the element that renders this.
+ */
+.cs-alert {
+  padding: var(--ar-space-3, 12px) var(--ar-space-4, 16px);
+  border-radius: var(--ar-radius-md, 8px);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: 1px solid;
+}
+
+.cs-alert-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.cs-alert-info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+/* ------------------------------------------------------------- dashboard */
+
+.cs-h1 {
+  margin: 0 0 var(--ar-space-1, 4px);
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.cs-lede {
+  margin: 0 0 var(--ar-space-6, 24px);
+  color: var(--ar-color-gray-500, #64748b);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.cs-grid {
+  display: grid;
+  gap: var(--ar-space-4, 16px);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.cs-stat-label {
+  margin: 0 0 var(--ar-space-1, 4px);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ar-color-gray-500, #64748b);
+}
+
+.cs-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.cs-stat-note {
+  margin: var(--ar-space-1, 4px) 0 0;
+  font-size: 0.8125rem;
+  color: var(--ar-color-gray-500, #64748b);
+}
+
+.cs-signout {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--ar-color-primary, #046bd2);
+  text-decoration: underline;
+  cursor: pointer;
+}

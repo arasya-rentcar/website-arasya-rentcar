@@ -12,7 +12,7 @@ plus a hub directory, a supporting blog, and a content-management layer.
 |---|---|---|
 | 1 | Scaffold, vendored design system, registries → Supabase | ✅ done |
 | 2 | Templates (home / city / region / country / travel / hub / blog), statically generated per locale | ✅ done |
-| 3 | Content Studio at `/admin` — Supabase Auth + Storage | ⏳ next |
+| 3 | Content Studio at `/admin` — Supabase Auth + Storage | 🔨 in progress — gate + sign-in done |
 
 Routes: `/` · `/{slug}` (city/region/country) · `/travel` · `/sewa-mobil` · `/blog` ·
 `/blog/{slug}` · `/admin`, each mirrored under `/en/` where English content exists.
@@ -80,6 +80,8 @@ snapshot, so the site renders fully without a database.
 | `npm run verify:content` | Offline: editorial rules — never self-drive, never names a partner, formal address, unique editorial/destination copy. Prints non-blocking findings for the copy review. |
 | `npm run qa:devices` | Live: layout across Fold cover (344px), iPhone, Fold open, iPad and desktop — overflow, image ratios, clipped text, touch targets. |
 | `npm run qa:interactions` | Live: every interactive path — WhatsApp CTAs and ref codes, FAQ, burger, filters, tariff checker, campaign attribution. |
+| `npm run verify:admin` | Live: the /admin gate from outside — anonymous redirects, `noindex`, and what a signed-in non-admin can reach. Takes an origin as an argument. |
+| `npm run qa:admin` | Live: signs in through the real form with `ADMIN_EMAIL` / `ADMIN_PASSWORD` and checks the dashboard, the session and sign-out. |
 | `npm run snapshot` | Regenerates the registry snapshot used when Supabase is unconfigured. |
 | `npm run db:seed` | Seeds Supabase from the handoff registries. Idempotent. |
 | `npm run db:verify` | End-to-end: reads every row back and deep-equals it against the registries. |
@@ -192,10 +194,32 @@ which keeps the generated pages identical for every visitor and fully cacheable.
 
 ### Auth
 
-Sign-up is disabled. An `admins` allowlist row is what grants access, enforced both in
-middleware and in every RLS policy — so an authenticated non-admin, or a leaked anon key,
-still cannot write. `npm run db:seed` bootstraps the first account from `ADMIN_EMAIL` /
-`ADMIN_PASSWORD`.
+Sign-up is disabled. An `admins` allowlist row is what grants access. `npm run db:seed`
+bootstraps the first account from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+Access is checked at three layers, and only the last two are load-bearing:
+
+| Layer | What it does | Trusted? |
+|---|---|---|
+| `middleware.ts` | Refreshes the session cookie; redirects anonymous requests to the login form | **No** — convenience only |
+| `requireAdmin()` | Re-reads the allowlist on every admin request, returns the session-scoped client | Yes |
+| RLS `is_admin()` | Postgres evaluates the caller's own JWT on every read and write | Yes, final |
+
+Middleware is deliberately not the boundary: it runs on the edge with a copy of the session,
+cannot see what a route queries, and has been bypassable through header spoofing
+(CVE-2025-29927). Content Studio writes therefore go through the **session** client, never
+`createAdminClient()` — so the database enforces admin-ness itself and a bug in application
+code cannot become a data breach on its own. `createAdminClient()` bypasses RLS entirely and
+stays reserved for the seed scripts.
+
+`npm run verify:admin` asserts the closed half (anonymous redirect, `noindex`, non-admin
+writes rejected) and `npm run qa:admin` the open half (the owner can actually sign in). Both
+are needed: a gate that rejects everyone passes the first perfectly.
+
+One note on the RLS assertions. An `UPDATE` blocked by `using (is_admin())` matches zero rows
+rather than failing, so PostgREST reports success — testing for an error there would pass
+against a policy that had been deleted. `verify:admin` checks the row is unchanged, and uses
+an `INSERT` (which `with check` must reject outright) for the error case.
 
 ### Two places the handoff README and the prototypes disagree
 
