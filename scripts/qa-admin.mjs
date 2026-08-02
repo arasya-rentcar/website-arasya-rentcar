@@ -12,7 +12,7 @@
  *   npx next start -p 3100
  *   npm run qa:admin
  */
-import { spawn } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -31,6 +31,31 @@ if (!EMAIL || !PASSWORD) {
   console.error('ADMIN_EMAIL / ADMIN_PASSWORD not set — cannot test the sign-in path.');
   process.exit(1);
 }
+
+/**
+ * Frees the debugging port if a previous run died without cleaning up.
+ *
+ * By PID, never `taskkill /IM chrome.exe` — that closes every Chrome window the
+ * person running the tests has open, which is a genuinely hostile thing for a
+ * test script to do to its author.
+ */
+function freePort(port) {
+  try {
+    const out = execSync(`netstat -ano -p tcp | findstr LISTENING | findstr :${port}`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const pids = [...new Set(out.trim().split(/\r?\n/).map((l) => l.trim().split(/\s+/).pop()))];
+    for (const pid of pids.filter(Boolean)) {
+      execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+      console.log(`  · freed port ${port} (pid ${pid})`);
+    }
+  } catch {
+    // Nothing listening — the normal case.
+  }
+}
+
+freePort(PORT);
 
 const profile = mkdtempSync(join(tmpdir(), 'cdp-admin-'));
 const chrome = spawn(CHROME, [
