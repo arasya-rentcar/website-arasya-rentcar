@@ -1,6 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from './supabase/server';
+import { supabaseEnv } from './supabase/config';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -35,6 +36,10 @@ export interface AdminSession {
  * Never returns for a non-admin, so callers can treat a return value as proof.
  */
 export async function requireAdmin(): Promise<AdminSession> {
+  // Checked before constructing the client, which would otherwise throw and
+  // turn a configuration mistake into an unexplained 500.
+  if (!supabaseEnv().configured) redirect('/admin/login?error=unconfigured');
+
   const supabase = await createServerSupabase();
 
   const {

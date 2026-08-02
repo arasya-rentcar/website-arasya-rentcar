@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { supabaseEnv } from '@/lib/supabase/config';
 
 /**
  * Session refresh + the redirect half of the /admin gate.
@@ -31,13 +32,28 @@ import { createServerClient } from '@supabase/ssr';
 const LOGIN = '/admin/login';
 
 export async function middleware(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const { url, key, configured } = supabaseEnv();
+  const { pathname } = request.nextUrl;
 
-  // No database configured (a snapshot-only local build). Let the request
-  // through so the route itself can say so — a redirect loop to a login form
-  // that cannot possibly work is a worse explanation than the page's own.
-  if (!url || !key) return NextResponse.next();
+  // No database configured. Send everything to the login page, which explains
+  // which variables are missing.
+  //
+  // The first version of this returned `next()` and let the route deal with it.
+  // On the deployment that actually hit this, the route threw inside
+  // `createServerSupabase()` and /admin served a bare 500 with no Location
+  // header — while every public page rendered perfectly from the snapshot
+  // fallback, so nothing suggested the database had never been connected. The
+  // failure has to name itself.
+  // `url`/`key` are tested alongside `configured` so TypeScript narrows them for
+  // the client below; `configured` alone is a boolean it cannot reason about.
+  if (!configured || !url || !key) {
+    if (pathname === LOGIN) return NextResponse.next();
+    const to = request.nextUrl.clone();
+    to.pathname = LOGIN;
+    to.search = '';
+    to.searchParams.set('error', 'unconfigured');
+    return NextResponse.redirect(to);
+  }
 
   let response = NextResponse.next({ request });
 
@@ -66,7 +82,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isLogin = pathname === LOGIN;
 
   if (!user && !isLogin) {

@@ -1,5 +1,6 @@
 import { Card, CardBody } from '@/design-system';
 import { safeNext } from '@/lib/admin';
+import { supabaseEnv } from '@/lib/supabase/config';
 import { LoginForm } from './LoginForm';
 import { signOut } from '../actions';
 
@@ -25,6 +26,7 @@ export default async function LoginPage({
   const params = await searchParams;
   const next = safeNext(params.next);
   const forbidden = params.error === 'forbidden';
+  const env = supabaseEnv();
 
   return (
     <main className="cs-login">
@@ -37,7 +39,30 @@ export default async function LoginPage({
             Akses terbatas pada akun yang terdaftar.
           </p>
 
-          {forbidden ? (
+          {!env.configured ? (
+            // Names the variables rather than saying "configuration error". The
+            // deployment that hit this served a perfectly healthy public site
+            // from the snapshot fallback, so there was nothing else pointing at
+            // the cause.
+            <div className="cs-alert cs-alert-error" role="alert">
+              <strong>Content Studio belum terhubung ke database.</strong>
+              <p style={{ margin: '8px 0 0' }}>
+                Variabel berikut belum diset pada deployment ini:
+              </p>
+              <ul style={{ margin: '8px 0 0', paddingLeft: '1.2em' }}>
+                {env.missing.map((name) => (
+                  <li key={name}>
+                    <code>{name}</code>
+                  </li>
+                ))}
+              </ul>
+              <p style={{ margin: '8px 0 0' }}>
+                Isi di Vercel → Settings → Environment Variables, lalu redeploy. Halaman publik
+                tetap tampil normal tanpa ini karena membaca snapshot registry, jadi situs yang
+                terlihat sehat bukan tanda database sudah tersambung.
+              </p>
+            </div>
+          ) : forbidden ? (
             <>
               <p className="cs-alert cs-alert-error" role="alert">
                 Akun Anda sudah masuk, tetapi tidak terdaftar sebagai admin.

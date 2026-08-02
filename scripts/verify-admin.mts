@@ -23,7 +23,22 @@ config({ path: '.env' });
 const BASE = (process.argv[2] ?? 'http://localhost:3000').replace(/\/$/, '');
 
 let failures = 0;
+
+/**
+ * Set when the deployment has no Supabase credentials at all.
+ *
+ * Everything below then reports as skipped rather than failed. Fourteen red
+ * crosses caused by one missing environment variable describe a broken gate,
+ * which is not what happened — and that misreading is exactly what this run
+ * cost the first time.
+ */
+let configBroken = false;
+
 const ok = (label: string, cond: boolean, detail = '') => {
+  if (configBroken) {
+    console.log(`  · ${label} — skipped`);
+    return;
+  }
   if (cond) console.log(`  ✓ ${label}`);
   else {
     failures++;
@@ -35,6 +50,27 @@ const skip = (label: string, why: string) => console.log(`  · ${label} — skip
 console.log(`\nContent Studio gate — ${BASE}`);
 
 /* ------------------------------------------------------ anonymous access */
+
+/* ------------------------------------------------------- configuration first */
+
+// Checked before anything else, because an unconfigured deployment fails four
+// gate assertions in ways that read like a broken gate rather than a missing
+// environment variable — which is exactly how the first live check of this was
+// misread.
+{
+  const loginProbe = await (await fetch(`${BASE}/admin/login`)).text();
+  if (/belum terhubung ke database/i.test(loginProbe)) {
+    const names = [...loginProbe.matchAll(/<code>(NEXT_PUBLIC_[A-Z_]+)<\/code>/g)].map((m) => m[1]);
+    configBroken = true;
+    failures++;
+    console.error(
+      `\n  ✗ this deployment has no Supabase credentials` +
+        `\n      missing: ${names.join(', ') || '(see /admin/login)'}` +
+        `\n      Set them in the hosting project and redeploy.` +
+        `\n      Every check below would fail for that one reason, so they are skipped.`
+    );
+  }
+}
 
 console.log('\nanonymous browser');
 
@@ -205,8 +241,18 @@ if (!url || !publishable || !secret) {
 
 /* -------------------------------------------------------------------- done */
 
+// `process.exitCode` rather than `process.exit()`. Exiting while undici still
+// holds keep-alive sockets aborts the process on Windows with a libuv assertion,
+// which replaced the real exit code with 127 and printed what looked like a
+// crash underneath the diagnosis. Setting the code and letting the event loop
+// drain gives a clean 1.
 if (failures) {
-  console.error(`\n${failures} check(s) failed.\n`);
-  process.exit(1);
+  console.error(
+    configBroken
+      ? '\nNothing could be checked — set the credentials and run this again.\n'
+      : `\n${failures} check(s) failed.\n`
+  );
+  process.exitCode = 1;
+} else {
+  console.log('\nGate is closed.\n');
 }
-console.log('\nGate is closed.\n');
