@@ -239,11 +239,19 @@ await evalIn(typeInto('input[type="password"]', PASSWORD));
 await evalIn('document.querySelector("form").requestSubmit()');
 await new Promise((r) => setTimeout(r, 3000));
 
-ok(
-  'arrives at the dashboard',
-  (await evalIn('location.pathname')) === '/admin',
-  `at ${await evalIn('location.pathname')}`
-);
+// Reports what the server actually said, not just where the browser ended up.
+// A sign-in that silently bounces back to the form is the same observation for
+// a wrong password, a missing allowlist row and a cookie that failed to stick —
+// and the message on screen is what tells them apart.
+{
+  const at = await evalIn('location.pathname');
+  const said = await evalIn('document.querySelector(\'[role="alert"]\')?.textContent?.trim() ?? ""');
+  ok(
+    'arrives at the dashboard',
+    at === '/admin',
+    said ? `bounced to ${at} — server said: "${said}"` : `at ${at}, and the form said nothing`
+  );
+}
 ok(
   'the content list rendered real rows',
   (await evalIn('document.querySelectorAll(".cs-row").length')) > 0,
@@ -290,8 +298,19 @@ console.log('\nediting a landing page');
 
 await go('/admin');
 const firstEditor = await evalIn(
-  'new URL([...document.querySelectorAll(".cs-row")].find(a => a.href.includes("/admin/lokasi/")).href).pathname'
+  '(() => { const a = [...document.querySelectorAll(".cs-row")].find(x => x.href.includes("/admin/lokasi/")); return a ? new URL(a.href).pathname : null; })()'
 );
+if (!firstEditor) {
+  // Everything below edits a real entry, so there is nothing to salvage — but
+  // it stops here rather than throwing a DOM TypeError that describes the test
+  // instead of the failure.
+  console.error('\n  ✗ no entry to edit — sign-in did not reach the content list. Stopping.\n');
+  failures++;
+  await send('Target.closeTarget', { targetId });
+  chrome.kill();
+  process.exitCode = 1;
+  throw new Error('cannot continue without a signed-in session');
+}
 await go(firstEditor);
 
 ok('the editor opens', (await evalIn('!!document.querySelector(".cs-editor")')), `at ${firstEditor}`);

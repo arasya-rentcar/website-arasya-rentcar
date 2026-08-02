@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { safeNext } from '@/lib/admin';
+import { supabaseEnv } from '@/lib/supabase/config';
 
 /**
  * Sign-in and sign-out for Content Studio.
@@ -16,6 +17,8 @@ import { safeNext } from '@/lib/admin';
 
 export interface SignInState {
   error?: string;
+  /** Supabase project the attempt was made against. See the note below. */
+  projectRef?: string;
 }
 
 export async function signIn(_prev: SignInState, formData: FormData): Promise<SignInState> {
@@ -35,7 +38,15 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
     // password". Sign-up is disabled, so the set of valid emails is small and
     // guessable — a distinguishing message would confirm which of the owner's
     // addresses is the live one.
-    return { error: 'Email atau kata sandi salah.' };
+    //
+    // It does name the database, which is a different question. Credentials
+    // that work locally and fail on a deployment mean the two are pointed at
+    // different projects, and without this the two failures read identically.
+    const ref = supabaseEnv().ref;
+    return {
+      error: 'Email atau kata sandi salah.',
+      projectRef: ref ?? undefined,
+    };
   }
 
   // Authenticated is not authorised. Checking here — rather than letting

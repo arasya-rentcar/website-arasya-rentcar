@@ -30,6 +30,15 @@ export function LoginForm({ next }: { next: string }) {
         // that the attempt failed is visual.
         <p className="cs-alert cs-alert-error" role="alert">
           {state.error}
+          {state.projectRef && (
+            <>
+              <br />
+              <span style={{ fontSize: '0.8125rem', opacity: 0.85 }}>
+                Database: <code>{state.projectRef}</code>. Kalau akun ini berhasil di komputer
+                lain, deployment ini menunjuk proyek Supabase yang berbeda.
+              </span>
+            </>
+          )}
         </p>
       )}
 

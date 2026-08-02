@@ -19,6 +19,8 @@ export interface SupabaseEnv {
   configured: boolean;
   /** The variables that are actually missing, for the message. */
   missing: string[];
+  /** Supabase project identifier, or null when the URL is absent or malformed. */
+  ref: string | null;
 }
 
 export function supabaseEnv(): SupabaseEnv {
@@ -29,5 +31,24 @@ export function supabaseEnv(): SupabaseEnv {
   if (!url) missing.push('NEXT_PUBLIC_SUPABASE_URL');
   if (!key) missing.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
 
-  return { url, key, configured: missing.length === 0, missing };
+  return { url, key, configured: missing.length === 0, missing, ref: projectRef(url) };
+}
+
+/**
+ * The project identifier out of a Supabase URL — `bsslonrvmnlzcadnolvz` from
+ * `https://bsslonrvmnlzcadnolvz.supabase.co`.
+ *
+ * Surfaced on a failed sign-in, because "wrong password" and "right password,
+ * wrong database" are the same sentence otherwise. Credentials that work
+ * locally and fail on a deployment mean the two are pointed at different
+ * projects, and nothing in the interface could previously say so — it cost a
+ * full debugging round trip to establish.
+ *
+ * Not a secret. The URL is designed to ship in every browser bundle; RLS and
+ * the allowlist are what protect the data, never the obscurity of the host.
+ */
+export function projectRef(url: string | undefined): string | null {
+  if (!url) return null;
+  const match = /^https:\/\/([a-z0-9-]+)\.supabase\.(co|in)/i.exec(url.trim());
+  return match ? match[1] : null;
 }
