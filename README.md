@@ -242,6 +242,35 @@ A duplicate slug, which silently breaks a URL, is what earns the interruption.
 > Note: `scripts/verify-content.mts` still defines its own copy of the positioning regexes.
 > Unifying the two is a pending decision, not an oversight.
 
+### `dynamicParams = false` and on-demand revalidation cannot both be had
+
+The four dynamic routes shipped with `dynamicParams = false`, which fixes the set of valid
+slugs at build time and turns anything else into a hard 404 — the right instinct for a
+programmatic-SEO site, which must not offer a crawler an infinite space of thin pages.
+
+It is incompatible with `revalidatePath`. Revalidating a literal path invalidates that
+route's cache entry; the next request has to render it, and rendering consults
+`generateStaticParams`, which does not exist at runtime. The result is `NoFallbackError` and
+a **permanent 404 on a page that was working a second earlier**.
+
+This is not a slow degradation — measured on a local production build, publishing one meta
+title took down all twenty dynamic pages (six cities × two locales, three articles × two,
+plus their EN twins) while `/`, `/sewa-mobil` and `/blog` stayed up, because static routes
+regenerate without consulting a params list. Every route file now sets `dynamicParams = true`.
+
+Nothing was given up for it. Unknown slugs still return a real 404: `getLocationBySlug`
+returns null and the page calls `notFound()`, which is an HTTP 404, not a soft one — verified
+for `/tidak-ada-kota`, `/en/no-such-city`, `/blog/tidak-ada` and `/en/blog/nope`. All 31 pages
+are still prerendered at build. The only difference is that an unknown path costs one database
+query instead of being rejected from a manifest.
+
+The knock-on: the deploy hook is now an optimisation rather than a requirement, since a newly
+published page renders on first request. It is kept only so a new URL joins the prerendered
+set.
+
+> The earlier reading of `NoFallbackError` in the logs — that it was benign because an unknown
+> slug still 404s correctly — was right about that case and missed this one.
+
 ### Drafts never touch the live row
 
 Saving in Content Studio writes to `content_drafts`, keyed by `(entity, entity_id)`. The

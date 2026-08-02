@@ -31,7 +31,7 @@ export async function generateStaticParams() {
   return locations.filter(hasEnLocation).map((l) => ({ slug: l.slugEn as string }));
 }
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;

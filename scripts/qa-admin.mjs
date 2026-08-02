@@ -108,6 +108,44 @@ async function evalIn(expr) {
 }
 
 /**
+ * Clicks the button whose label matches, and says what was on screen if none does.
+ *
+ * `[...].find(...).click()` throws "Cannot read properties of undefined" when
+ * nothing matches, which names neither the button being looked for nor the ones
+ * that exist — several minutes of a debugging session for one missing label.
+ */
+async function clickButton(pattern, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+  let last = { seen: [] };
+
+  // Polls rather than clicking once. A save runs inside `startTransition`, and
+  // `isPending` stays true — so the button stays `loading`, therefore disabled —
+  // for a moment after the status text has already changed to "Tersimpan".
+  // Clicking on the first sight of that text raced the transition and hit a
+  // disabled button. A person would simply wait until it was clickable.
+  while (Date.now() < deadline) {
+    const res = await evalIn(`(() => {
+      const buttons = [...document.querySelectorAll('button')];
+      const hit = buttons.find(b => ${pattern}.test(b.textContent));
+      if (!hit) return { ok: false, seen: buttons.map(b => b.textContent.trim()) };
+      if (hit.disabled) return { ok: false, disabled: true, seen: [hit.textContent.trim()] };
+      hit.click();
+      return { ok: true };
+    })()`).catch(() => ({ ok: false, seen: ['(navigating)'] }));
+
+    if (res.ok) return true;
+    last = res;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  throw new Error(
+    last.disabled
+      ? `button ${pattern} never became enabled — check for blocking validation issues`
+      : `no button matching ${pattern}; on screen: [${last.seen.join(' | ')}]`
+  );
+}
+
+/**
  * Polls until an expression is truthy.
  *
  * Discarding a draft ends in `location.reload()`, so a fixed sleep followed by
@@ -292,7 +330,7 @@ ok(
   'nothing told the owner there were unsaved changes'
 );
 
-await evalIn('[...document.querySelectorAll("button")].find(b => /simpan draf/i.test(b.textContent)).click()');
+await clickButton(/simpan draf/i);
 ok(
   'saving reports success',
   await waitFor('/tersimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")'),
@@ -346,7 +384,7 @@ await go(firstEditor);
 // A native confirm() would block CDP outright, so it is stubbed rather than
 // dismissed — the point being tested is what happens after the owner agrees.
 await evalIn('window.confirm = () => true');
-await evalIn('[...document.querySelectorAll("button")].find(b => /buang draf/i.test(b.textContent)).click()');
+await clickButton(/buang draf/i);
 ok(
   'discarding a draft restores the live version',
   await waitFor(
@@ -355,12 +393,98 @@ ok(
   await evalIn('document.querySelector(".cs-lede")?.textContent ?? "(nothing)"')
 );
 
+/* -------------------------------------------------------------- publishing */
+
+/**
+ * The only assertion that can prove publishing works is one that changes real
+ * content and then looks at the public page. So this does exactly that, and
+ * puts it back.
+ *
+ * The original value is captured first and restored through a second publish,
+ * so a clean run leaves the database byte-identical. A failed run leaves a
+ * visible marker in a meta title, which is recoverable and — on a site that is
+ * still `noindex` — harmless. An assertion that avoided the risk would also
+ * avoid testing the thing.
+ */
+console.log('\npublishing');
+
+// Reads a field by its visible label, so the test does not depend on input order.
+const fieldValue = (label) => `(() => {
+  const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
+  if (!lab) return null;
+  const el = document.getElementById(lab.htmlFor);
+  return el ? el.value : null;
+})()`;
+
+const setField = (label, value) => `(() => {
+  const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
+  if (!lab) return false;
+  const el = document.getElementById(lab.htmlFor);
+  if (!el) return false;
+  const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(value)});
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  return true;
+})()`;
+
+await go(firstEditor);
+const slug = await evalIn(fieldValue('Slug (Indonesia)'));
+const originalTitle = await evalIn(fieldValue('Meta title'));
+const publishMarker = `QA terbit ${Date.now()}`;
+
+ok('the entry has a slug and a meta title to work with', Boolean(slug && originalTitle), `slug=${slug}`);
+
+async function saveAndPublish(title) {
+  await evalIn(setField('Meta title', title));
+  await clickButton(/simpan draf/i);
+  await waitFor('/tersimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")');
+  await evalIn('window.confirm = () => true');
+  await clickButton(/terbitkan/i);
+  return waitFor('/diterbitkan|gagal/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")');
+}
+
+await saveAndPublish(publishMarker);
+const publishMessage = await evalIn('document.querySelector(".cs-bar-status")?.textContent ?? ""');
+ok('publishing reports success', /diterbitkan/i.test(publishMessage), publishMessage);
+ok(
+  'it says how many pages were regenerated',
+  /\d+ halaman diperbarui/i.test(publishMessage),
+  publishMessage
+);
+
+// The point of the whole commit: the change is now on the public page, without
+// waiting out the ISR window.
+{
+  const live = await (await fetch(`${BASE}/${slug}`)).text();
+  ok(`the change is live on /${slug} immediately`, live.includes(publishMarker), 'the public page still shows the old title');
+}
+
+await go('/admin');
+ok(
+  'the pending-edits marker is gone once published',
+  !(await evalIn('!!document.querySelector(".cs-dot")')),
+  'the draft dot survived publication'
+);
+
+// Put the original back through the same path, which also proves publishing
+// twice in a row works.
+await go(firstEditor);
+await saveAndPublish(originalTitle);
+{
+  const restored = await (await fetch(`${BASE}/${slug}`)).text();
+  ok(
+    'restoring the original publishes cleanly',
+    restored.includes(originalTitle) && !restored.includes(publishMarker),
+    'the page did not return to its original title — CHECK THE DATABASE'
+  );
+}
+
 /* ------------------------------------------------------------- signing out */
 
 console.log('\nsigning out');
 
 await go('/admin');
-await evalIn('[...document.querySelectorAll(".cs-signout")].find(b => /keluar/i.test(b.textContent)).click()');
+await clickButton(/keluar/i);
 await new Promise((r) => setTimeout(r, 2500));
 
 ok(

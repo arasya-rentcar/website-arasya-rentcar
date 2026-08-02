@@ -190,6 +190,118 @@ export async function getStagedPost(
 
 /* -------------------------------------------------------------------- site */
 
+/* ------------------------------------------------------- domain → row map */
+
+/**
+ * Field-name maps for turning a draft patch back into database columns.
+ *
+ * Explicit tables rather than a camelCase→snake_case function. A generic
+ * converter would happily forward any key the client sent, so a crafted request
+ * could set `status`, `sort_order` or `key` through a form that shows none of
+ * them. These lists are the allowlist: a field absent here cannot be written by
+ * a draft, whatever the payload says.
+ *
+ * `en` is intentionally present — the translation tab writes through the same
+ * path — while `status` and `key` are intentionally not. Publishing changes
+ * status, and it does so from its own explicit statement.
+ */
+const LOCATION_FIELD_COLUMNS: Record<string, string> = {
+  slug: 'slug',
+  slugEn: 'slug_en',
+  name: 'name',
+  h1: 'h1',
+  heroSubtitle: 'hero_subtitle',
+  heroStat: 'hero_stat',
+  heroImage: 'hero_image',
+  metaTitle: 'meta_title',
+  metaDescription: 'meta_description',
+  trustRouteDesc: 'trust_route_desc',
+  serviceLine: 'service_line',
+  editorial: 'editorial',
+  destinationsSubtitle: 'destinations_subtitle',
+  destinations: 'destinations',
+  outOfTownExamples: 'out_of_town_examples',
+  pickupPoints: 'pickup_points',
+  areaServed: 'area_served',
+  routes: 'routes',
+  faqExtra: 'faq_extra',
+  trust: 'trust',
+  cityDirectory: 'city_directory',
+  waPhone: 'wa_phone',
+  en: 'en',
+};
+
+const POST_FIELD_COLUMNS: Record<string, string> = {
+  slug: 'slug',
+  slugEn: 'slug_en',
+  title: 'title',
+  category: 'category',
+  cityKey: 'city_key',
+  cityName: 'city_name',
+  citySlug: 'city_slug',
+  author: 'author',
+  datePublished: 'date_published',
+  dateModified: 'date_modified',
+  dateDisplay: 'date_display',
+  updatedDisplay: 'updated_display',
+  readMinutes: 'read_minutes',
+  metaTitle: 'meta_title',
+  metaDescription: 'meta_description',
+  excerpt: 'excerpt',
+  sections: 'sections',
+  related: 'related',
+  en: 'en',
+};
+
+const SITE_FIELD_COLUMNS: Record<string, string> = {
+  settings: 'settings',
+  fleet: 'fleet',
+  fleetNotes: 'fleet_notes',
+  genericUnits: 'generic_units',
+  services: 'services',
+  testimonials: 'testimonials',
+  trustDefaults: 'trust_defaults',
+  gallery: 'gallery',
+  en: 'en',
+};
+
+const COLUMN_MAPS: Record<Entity, Record<string, string>> = {
+  location: LOCATION_FIELD_COLUMNS,
+  post: POST_FIELD_COLUMNS,
+  site: SITE_FIELD_COLUMNS,
+  travel: { units: 'units', origins: 'origins', routes: 'routes' },
+};
+
+/**
+ * Converts a draft patch to a column update, dropping anything not allowlisted.
+ *
+ * Returns the ignored keys too, so publishing can say what it skipped rather
+ * than silently discarding an edit the owner believed they had made.
+ */
+export function toColumns(
+  entity: Entity,
+  patch: Record<string, unknown>
+): { columns: Record<string, unknown>; ignored: string[] } {
+  const map = COLUMN_MAPS[entity];
+  const columns: Record<string, unknown> = {};
+  const ignored: string[] = [];
+
+  for (const [field, value] of Object.entries(patch)) {
+    const column = map[field];
+    if (!column) {
+      ignored.push(field);
+      continue;
+    }
+    // `undefined` would be serialised out of the request entirely; null is how
+    // "clear this optional column" is expressed.
+    columns[column] = value === undefined ? null : value;
+  }
+
+  return { columns, ignored };
+}
+
+/* -------------------------------------------------------------------- site */
+
 export async function getStagedSite(supabase: SupabaseClient): Promise<Staged<Site>> {
   const { data, error } = await supabase.from('site_settings').select(SITE_COLUMNS).single();
   if (error) throw new Error(`getStagedSite: ${error.message}`);

@@ -6,7 +6,8 @@ import { validateLocation, type Issue } from '@/lib/validate';
 import { waDigits } from '@/lib/shared';
 import type { Location, Site } from '@/types';
 import { Field, IssueList, SerpPreview } from '../../_components/fields';
-import { discardLocation, saveLocation } from './actions';
+import { discardLocation, publishLocationAction, saveLocation } from './actions';
+import { describePublish } from '../../_components/publish';
 
 /**
  * The editable half of a landing page.
@@ -58,6 +59,16 @@ export function LocationForm({
   const [status, setStatus] = useState<string>(hasDraft ? 'Ada draf tersimpan' : '');
   const [pending, startTransition] = useTransition();
 
+  /**
+   * Whether a draft exists, tracked in state rather than read from the prop.
+   *
+   * The prop is fixed at the server render, so gating Terbitkan on it hid the
+   * button for the entire session in which the draft was created: save, then
+   * nothing to publish with until a manual reload. Saving something and being
+   * unable to publish it is the one sequence this screen has to get right.
+   */
+  const [draftExists, setDraftExists] = useState(hasDraft);
+
   const set = <K extends keyof Location>(field: K, v: Location[K]) => {
     setValue((prev) => ({ ...prev, [field]: v }));
     setDirty(true);
@@ -87,6 +98,7 @@ export function LocationForm({
       if (res.error) setStatus(`Gagal: ${res.error}`);
       else {
         setDirty(false);
+        setDraftExists(true);
         setStatus(`Tersimpan sebagai draf ${new Date(res.savedAt!).toLocaleTimeString('id-ID')}`);
       }
     });
@@ -98,6 +110,21 @@ export function LocationForm({
       const res = await discardLocation(value.key);
       if (res.error) setStatus(`Gagal: ${res.error}`);
       else window.location.reload();
+    });
+  };
+
+  const publish = () => {
+    if (dirty) {
+      setStatus('Simpan dulu sebelum menerbitkan.');
+      return;
+    }
+    if (!confirm('Terbitkan perubahan ini ke situs yang dilihat pengunjung?')) return;
+    startTransition(async () => {
+      const res = await publishLocationAction(value.key);
+      setStatus(describePublish(res));
+      // Reloaded only on success, so a failure leaves the message on screen
+      // next to the form that produced it.
+      if (res.ok) setTimeout(() => window.location.reload(), 2500);
     });
   };
 
@@ -298,14 +325,23 @@ export function LocationForm({
           {dirty ? 'Ada perubahan belum disimpan' : status}
         </span>
         <span className="cs-bar-end">
-          {hasDraft && (
+          {draftExists && (
             <Button variant="ghost" onClick={discard} disabled={pending}>
               Buang draf
             </Button>
           )}
-          <Button onClick={save} loading={pending} disabled={!dirty && !pending}>
+          <Button variant="outline" onClick={save} loading={pending} disabled={!dirty && !pending}>
             Simpan draf
           </Button>
+          {draftExists && (
+            // Disabled while there are blocking issues, and the reason is in
+            // the panel above rather than in a tooltip — a disabled button with
+            // no visible explanation is the most common way validation becomes
+            // something to fight rather than read.
+            <Button onClick={publish} loading={pending} disabled={errors > 0 || dirty}>
+              Terbitkan
+            </Button>
+          )}
         </span>
       </div>
     </div>

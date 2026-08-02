@@ -5,7 +5,8 @@ import { Badge, Button } from '@/design-system';
 import { validatePost, type Issue } from '@/lib/validate';
 import type { Location, Post } from '@/types';
 import { Field, IssueList, SerpPreview } from '../../_components/fields';
-import { discardPost, savePost } from './actions';
+import { discardPost, publishPostAction, savePost } from './actions';
+import { describePublish } from '../../_components/publish';
 
 /**
  * The editable half of a blog article.
@@ -55,6 +56,9 @@ export function PostForm({
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState(hasDraft ? 'Ada draf tersimpan' : '');
   const [pending, startTransition] = useTransition();
+
+  /** Stateful, not the prop — see the note in LocationForm. */
+  const [draftExists, setDraftExists] = useState(hasDraft);
 
   const set = <K extends keyof Post>(field: K, v: Post[K]) => {
     setValue((prev) => ({ ...prev, [field]: v }));
@@ -106,6 +110,7 @@ export function PostForm({
       if (res.error) setStatus(`Gagal: ${res.error}`);
       else {
         setDirty(false);
+        setDraftExists(true);
         setStatus(`Tersimpan sebagai draf ${new Date(res.savedAt!).toLocaleTimeString('id-ID')}`);
       }
     });
@@ -117,6 +122,19 @@ export function PostForm({
       const res = await discardPost(value.key);
       if (res.error) setStatus(`Gagal: ${res.error}`);
       else window.location.reload();
+    });
+  };
+
+  const publish = () => {
+    if (dirty) {
+      setStatus('Simpan dulu sebelum menerbitkan.');
+      return;
+    }
+    if (!confirm('Terbitkan perubahan ini ke situs yang dilihat pengunjung?')) return;
+    startTransition(async () => {
+      const res = await publishPostAction(value.key);
+      setStatus(describePublish(res));
+      if (res.ok) setTimeout(() => window.location.reload(), 2500);
     });
   };
 
@@ -259,14 +277,19 @@ export function PostForm({
           {dirty ? 'Ada perubahan belum disimpan' : status}
         </span>
         <span className="cs-bar-end">
-          {hasDraft && (
+          {draftExists && (
             <Button variant="ghost" onClick={discard} disabled={pending}>
               Buang draf
             </Button>
           )}
-          <Button onClick={save} loading={pending} disabled={!dirty && !pending}>
+          <Button variant="outline" onClick={save} loading={pending} disabled={!dirty && !pending}>
             Simpan draf
           </Button>
+          {draftExists && (
+            <Button onClick={publish} loading={pending} disabled={errors > 0 || dirty}>
+              Terbitkan
+            </Button>
+          )}
         </span>
       </div>
     </div>

@@ -29,7 +29,7 @@ export async function generateStaticParams() {
   return locations.map((l) => ({ slug: l.slug }));
 }
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;

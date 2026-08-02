@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/admin';
-import { discardDraft, saveDraft } from '@/lib/cms';
+import { discardDraft, getStagedLocation, getStagedSite, listLocations, saveDraft } from '@/lib/cms';
+import { publishLocation } from '@/lib/publish';
+import { canPublish, validateLocation } from '@/lib/validate';
+import type { PublishResult } from '@/lib/publish';
 
 /**
  * Staging and discarding edits to a landing page.
@@ -42,6 +45,53 @@ export async function saveLocation(
   revalidatePath(`/admin/lokasi/${key}`);
 
   return { ok: true, savedAt: new Date().toISOString() };
+}
+
+/**
+ * Publishes the staged edit.
+ *
+ * Validation runs here, server-side, and not only in the form. The form's copy
+ * of the rules is there so the owner sees a problem while typing; this one is
+ * there because a server action is a public endpoint and the browser's opinion
+ * of whether the content is valid cannot be the thing that decides.
+ *
+ * Both call the same module, so the two answers cannot differ.
+ */
+export async function publishLocationAction(key: string): Promise<PublishResult> {
+  const { supabase } = await requireAdmin();
+
+  const [staged, siteStaged, all] = await Promise.all([
+    getStagedLocation(supabase, key),
+    getStagedSite(supabase),
+    listLocations(supabase),
+  ]);
+
+  if (!staged) return { ok: false, error: 'Entri tidak ditemukan.' };
+  if (!staged.draft) return { ok: false, error: 'Tidak ada draf untuk diterbitkan.' };
+
+  const issues = validateLocation(staged.merged, {
+    otherSlugs: all.filter((l) => l.key !== key).map((l) => l.slug),
+    otherSlugsEn: all
+      .filter((l) => l.key !== key)
+      .map((l) => l.slugEn)
+      .filter((s): s is string => Boolean(s)),
+    site: siteStaged.merged,
+  });
+
+  if (!canPublish(issues)) {
+    const first = issues.filter((i) => i.level === 'error');
+    return {
+      ok: false,
+      error: `${first.length} masalah wajib diperbaiki: ${first.map((i) => i.field).join(', ')}`,
+    };
+  }
+
+  const result = await publishLocation(supabase, staged.live, staged.draft.data, true);
+
+  revalidatePath('/admin');
+  revalidatePath(`/admin/lokasi/${key}`);
+
+  return result;
 }
 
 export async function discardLocation(key: string): Promise<SaveState> {

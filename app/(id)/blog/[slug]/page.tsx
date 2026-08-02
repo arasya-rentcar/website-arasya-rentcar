@@ -22,7 +22,7 @@ export async function generateStaticParams() {
   return posts.map((p) => ({ slug: p.slug.replace(/^blog\//, '') }));
 }
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
