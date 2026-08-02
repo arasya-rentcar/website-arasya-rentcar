@@ -1,78 +1,110 @@
-import { Card, CardBody } from '@/design-system';
+import Link from 'next/link';
+import { Badge } from '@/design-system';
 import { requireAdmin } from '@/lib/admin';
+import { listDrafts, listLocations, listPosts } from '@/lib/cms';
 import { AdminShell } from './AdminShell';
 
 // Session-scoped and always current. An admin page that could be served from a
 // cache would be an admin page that could be served to the wrong person.
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Beranda · Content Studio' };
+export const metadata = { title: 'Konten · Content Studio' };
 
 /**
- * Content Studio dashboard.
+ * The list view — Content Studio's home.
  *
- * Currently a status board. The point of shipping it with the gate rather than
- * with the editors is that it exercises the whole chain end to end — session
- * cookie, allowlist check, RLS-scoped read — against real tables, so a broken
- * link in it fails here rather than inside a half-finished form.
- *
- * Note what the counts prove: these queries run through the *session* client,
- * whose policy is `is_admin()`, so seeing a draft row at all is evidence the
- * policy resolved. The public client cannot retrieve one — `verify:rls` asserts
- * that from the other side.
+ * Deliberately one page rather than a dashboard plus separate collection pages.
+ * There are six landing pages and three articles; a navigation tree to reach
+ * nine items would be more structure than content. What the owner needs on
+ * arrival is which entries exist, which are live, and which have edits waiting
+ * — so those are the three things a row carries.
  */
 export default async function AdminHome() {
   const { supabase, user } = await requireAdmin();
 
   const [locations, posts, drafts] = await Promise.all([
-    supabase.from('locations').select('key, status'),
-    supabase.from('posts').select('key, status'),
-    supabase.from('content_drafts').select('entity, entity_id, updated_at'),
+    listLocations(supabase),
+    listPosts(supabase),
+    listDrafts(supabase),
   ]);
 
-  const locRows = (locations.data ?? []) as { key: string; status: string }[];
-  const postRows = (posts.data ?? []) as { key: string; status: string }[];
-  const draftRows = (drafts.data ?? []) as { entity: string; entity_id: string }[];
-
-  const published = (rows: { status: string }[]) => rows.filter((r) => r.status === 'published').length;
-
-  const stats = [
-    {
-      label: 'Halaman kota',
-      value: locRows.length,
-      note: `${published(locRows)} terbit · ${locRows.length - published(locRows)} draf`,
-    },
-    {
-      label: 'Artikel blog',
-      value: postRows.length,
-      note: `${published(postRows)} terbit · ${postRows.length - published(postRows)} draf`,
-    },
-    {
-      label: 'Editan tertunda',
-      value: draftRows.length,
-      note: draftRows.length ? 'Belum diterbitkan' : 'Semua sudah diterbitkan',
-    },
-  ];
+  const pending = new Set(drafts.map((d) => `${d.entity}:${d.entity_id}`));
 
   return (
     <AdminShell email={user.email}>
-      <h1 className="cs-h1">Beranda</h1>
+      <h1 className="cs-h1">Konten</h1>
       <p className="cs-lede">
-        Ringkasan konten situs. Editor per entri menyusul — untuk sekarang halaman ini
-        memastikan sesi, daftar admin, dan akses database sudah berjalan.
+        {locations.length} halaman kota · {posts.length} artikel
+        {pending.size > 0 && <> · <strong>{pending.size} entri punya editan belum diterbitkan</strong></>}
       </p>
 
-      <div className="cs-grid">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardBody>
-              <p className="cs-stat-label">{s.label}</p>
-              <div className="cs-stat-value">{s.value}</div>
-              <p className="cs-stat-note">{s.note}</p>
-            </CardBody>
-          </Card>
-        ))}
-      </div>
+      <section className="cs-section">
+        <h2 className="cs-h2">Halaman kota</h2>
+        <ul className="cs-list">
+          {locations.map((l) => (
+            <li key={l.key}>
+              <Link href={`/admin/lokasi/${l.key}`} className="cs-row">
+                <span className="cs-row-main">
+                  <span className="cs-row-title">
+                    {l.name}
+                    {pending.has(`location:${l.key}`) && (
+                      // A dot, plus text for anyone who cannot see it. Colour
+                      // alone would carry the entire meaning otherwise.
+                      <span className="cs-dot" title="Ada editan belum diterbitkan">
+                        <span className="cs-sr">Ada editan belum diterbitkan</span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="cs-row-sub">/{l.slug}</span>
+                </span>
+                <span className="cs-row-meta">
+                  {l.slugEn ? (
+                    <Badge tone="info" variant="subtle">EN</Badge>
+                  ) : (
+                    <Badge tone="neutral" variant="subtle">ID saja</Badge>
+                  )}
+                  <Badge tone={l.status === 'published' ? 'success' : 'warning'} variant="subtle">
+                    {l.status === 'published' ? 'Terbit' : 'Draf'}
+                  </Badge>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="cs-section">
+        <h2 className="cs-h2">Artikel</h2>
+        <ul className="cs-list">
+          {posts.map((p) => (
+            <li key={p.key}>
+              <Link href={`/admin/artikel/${p.key}`} className="cs-row">
+                <span className="cs-row-main">
+                  <span className="cs-row-title">
+                    {p.title}
+                    {pending.has(`post:${p.key}`) && (
+                      <span className="cs-dot" title="Ada editan belum diterbitkan">
+                        <span className="cs-sr">Ada editan belum diterbitkan</span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="cs-row-sub">/{p.slug}</span>
+                </span>
+                <span className="cs-row-meta">
+                  {p.slugEn ? (
+                    <Badge tone="info" variant="subtle">EN</Badge>
+                  ) : (
+                    <Badge tone="neutral" variant="subtle">ID saja</Badge>
+                  )}
+                  <Badge tone={p.status === 'published' ? 'success' : 'warning'} variant="subtle">
+                    {p.status === 'published' ? 'Terbit' : 'Draf'}
+                  </Badge>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </AdminShell>
   );
 }

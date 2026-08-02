@@ -12,7 +12,7 @@ plus a hub directory, a supporting blog, and a content-management layer.
 |---|---|---|
 | 1 | Scaffold, vendored design system, registries → Supabase | ✅ done |
 | 2 | Templates (home / city / region / country / travel / hub / blog), statically generated per locale | ✅ done |
-| 3 | Content Studio at `/admin` — Supabase Auth + Storage | 🔨 in progress — gate + sign-in done |
+| 3 | Content Studio at `/admin` — Supabase Auth + Storage | 🔨 in progress — gate, listing, field editors |
 
 Routes: `/` · `/{slug}` (city/region/country) · `/travel` · `/sewa-mobil` · `/blog` ·
 `/blog/{slug}` · `/admin`, each mirrored under `/en/` where English content exists.
@@ -81,7 +81,7 @@ snapshot, so the site renders fully without a database.
 | `npm run qa:devices` | Live: layout across Fold cover (344px), iPhone, Fold open, iPad and desktop — overflow, image ratios, clipped text, touch targets. |
 | `npm run qa:interactions` | Live: every interactive path — WhatsApp CTAs and ref codes, FAQ, burger, filters, tariff checker, campaign attribution. |
 | `npm run verify:admin` | Live: the /admin gate from outside — anonymous redirects, `noindex`, and what a signed-in non-admin can reach. Takes an origin as an argument. |
-| `npm run qa:admin` | Live: signs in through the real form with `ADMIN_EMAIL` / `ADMIN_PASSWORD` and checks the dashboard, the session and sign-out. |
+| `npm run qa:admin` | Live: signs in through the real form with `ADMIN_EMAIL` / `ADMIN_PASSWORD`, then edits an entry, saves, reloads, proves the draft reaches no public page, and discards it. |
 | `npm run snapshot` | Regenerates the registry snapshot used when Supabase is unconfigured. |
 | `npm run db:seed` | Seeds Supabase from the handoff registries. Idempotent. |
 | `npm run db:verify` | End-to-end: reads every row back and deep-equals it against the registries. |
@@ -220,6 +220,43 @@ One note on the RLS assertions. An `UPDATE` blocked by `using (is_admin())` matc
 rather than failing, so PostgREST reports success — testing for an error there would pass
 against a policy that had been deleted. `verify:admin` checks the row is unchanged, and uses
 an `INSERT` (which `with check` must reject outright) for the error case.
+
+### One set of content rules, two consumers
+
+`src/lib/validate.ts` holds the rules Content Studio applies before publishing —
+meta lengths, slug format and uniqueness across locations *and* posts (they share one URL
+space), WhatsApp numbers that must appear in the anti-fraud panel, the positioning rules,
+the blog's one-city / two-related relations. It has no Node or Supabase dependency, so the
+same module runs on every keystroke in the browser, in a server action before a write, and
+in a script.
+
+That is the point: **Content Studio cannot stage something the build would reject.** A second
+copy of these rules inside the editor would drift, and the CMS would start accepting content
+CI then failed on.
+
+`error` blocks publication; `warning` does not. The split is deliberate — Google truncates
+SERP entries by pixel width, so 60/160 are targets, and a title two characters over usually
+still renders whole. Blocking on that trains an owner to treat validation as an obstacle.
+A duplicate slug, which silently breaks a URL, is what earns the interruption.
+
+> Note: `scripts/verify-content.mts` still defines its own copy of the positioning regexes.
+> Unifying the two is a pending decision, not an oversight.
+
+### Drafts never touch the live row
+
+Saving in Content Studio writes to `content_drafts`, keyed by `(entity, entity_id)`. The
+editor then shows the live row with the draft applied on top — the state publishing *would*
+produce — while every public page keeps serving the untouched row. `qa:admin` asserts this
+directly: it stages a marker string, then fetches every URL in the sitemap and fails if the
+marker appears on any of them.
+
+The overlay is a shallow merge, unlike the by-index merge in `localize.ts`, and the
+difference is deliberate. A draft always carries whole fields as the form submitted them —
+editing one destination sends the entire array, because the list editor owns it — so a deep
+merge would try to reconcile two versions element-wise and could resurrect a row the owner
+had just deleted. Translations are the opposite case: they legitimately carry only some
+fields per element, and merging them wholesale would drop the image and its licence
+attribution.
 
 ### Two places the handoff README and the prototypes disagree
 

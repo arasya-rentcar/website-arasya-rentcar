@@ -108,6 +108,28 @@ async function evalIn(expr) {
 }
 
 /**
+ * Polls until an expression is truthy.
+ *
+ * Discarding a draft ends in `location.reload()`, so a fixed sleep followed by
+ * `Page.navigate` raced the reload and evaluated against a document that was
+ * being torn down — the assertion failed while the feature worked, which is the
+ * worst kind of test. Waiting on the condition rather than on the clock also
+ * makes the whole suite faster than the sleeps it replaces.
+ */
+async function waitFor(expr, timeoutMs = 12000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      if (await evalIn(expr)) return true;
+    } catch {
+      // Mid-navigation: the execution context is gone. Try again.
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return false;
+}
+
+/**
  * Types into a React-controlled input.
  *
  * Setting `.value` directly does not notify React — it reads from its own
@@ -185,14 +207,14 @@ ok(
   `at ${await evalIn('location.pathname')}`
 );
 ok(
-  'dashboard rendered real content',
-  (await evalIn('document.querySelectorAll(".cs-stat-value").length')) === 3,
-  `${await evalIn('document.querySelectorAll(".cs-stat-value").length')} stat cards`
+  'the content list rendered real rows',
+  (await evalIn('document.querySelectorAll(".cs-row").length')) > 0,
+  'no entries — the query probably failed silently'
 );
 ok(
-  'counts came from the database, not zeroes',
-  (await evalIn('[...document.querySelectorAll(".cs-stat-value")].some(el => Number(el.textContent) > 0)')),
-  'every count was 0 — the query probably failed silently'
+  'every row links to an editor',
+  await evalIn('[...document.querySelectorAll(".cs-row")].every(a => /^\\/admin\\/(lokasi|artikel)\\//.test(new URL(a.href).pathname))'),
+  'a row pointed somewhere unexpected'
 );
 ok(
   'the signed-in account is shown',
@@ -219,6 +241,118 @@ ok(
   (await evalIn('document.documentElement.lang')) === 'id' &&
     (await evalIn('!!document.querySelector("header")')),
   'admin chrome leaked into the public site'
+);
+
+/* ----------------------------------------------------------------- editing */
+
+// Drives one full edit cycle against a real entry. The draft is discarded at
+// the end, and nothing here can reach the live row — staging writes to
+// `content_drafts`, and publishing does not exist yet.
+console.log('\nediting a landing page');
+
+await go('/admin');
+const firstEditor = await evalIn(
+  'new URL([...document.querySelectorAll(".cs-row")].find(a => a.href.includes("/admin/lokasi/")).href).pathname'
+);
+await go(firstEditor);
+
+ok('the editor opens', (await evalIn('!!document.querySelector(".cs-editor")')), `at ${firstEditor}`);
+ok(
+  'it shows a Google preview',
+  await evalIn('!!document.querySelector(".cs-serp-title")'),
+  'no SERP preview rendered'
+);
+ok(
+  'structural fields are not editable here',
+  await evalIn('!document.querySelector(\'input[value="city"]\') && !!document.querySelector(".ar-badge")'),
+  'template/variant appear to be editable'
+);
+
+// The counter has to react to typing, or it is decoration.
+const beforeCount = await evalIn('document.querySelector(".cs-count span:last-child")?.textContent ?? ""');
+const MARKER = `QA draft marker ${Date.now()}`;
+await evalIn(`(() => {
+  const inputs = [...document.querySelectorAll('input.ar-field__input')];
+  const el = inputs.find(i => i.closest('div')?.querySelector('.cs-count'));
+  if (!el) return false;
+  const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  set.call(el, ${JSON.stringify(MARKER)});
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  return true;
+})()`);
+await new Promise((r) => setTimeout(r, 400));
+ok(
+  'the character counter follows what is typed',
+  (await evalIn('document.querySelector(".cs-count span:last-child")?.textContent ?? ""')) !== beforeCount,
+  'the counter did not move'
+);
+ok(
+  'unsaved changes are announced',
+  /belum disimpan/i.test(await evalIn('document.querySelector(".cs-bar-status")?.textContent ?? ""')),
+  'nothing told the owner there were unsaved changes'
+);
+
+await evalIn('[...document.querySelectorAll("button")].find(b => /simpan draf/i.test(b.textContent)).click()');
+ok(
+  'saving reports success',
+  await waitFor('/tersimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")'),
+  await evalIn('document.querySelector(".cs-bar-status")?.textContent ?? "(nothing)"')
+);
+
+await go(firstEditor);
+ok(
+  'the draft survives a reload',
+  /belum diterbitkan/i.test(await evalIn('document.querySelector(".cs-lede")?.textContent ?? ""')),
+  'the editor reopened on the live version — the draft was lost'
+);
+
+// The property the whole draft table exists to guarantee. A staged edit must
+// be invisible to every visitor until it is published — so the marker just
+// saved must appear on no public page at all, not merely on the one being
+// edited. Checked across the entire sitemap, because a landing page's copy also
+// surfaces on the hub, the home page and the blog's city links.
+{
+  const sitemap = await (await fetch(`${BASE}/sitemap.xml`)).text();
+  const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  let leaked = null;
+  for (const path of paths) {
+    const body = await (await fetch(BASE + path)).text();
+    if (body.includes(MARKER)) {
+      leaked = path;
+      break;
+    }
+  }
+  ok(
+    `the staged edit reaches no public page (${paths.length} checked)`,
+    leaked === null,
+    `it leaked onto ${leaked}`
+  );
+}
+
+await go('/admin');
+ok(
+  'the list marks the entry as having pending edits',
+  await evalIn('!!document.querySelector(".cs-dot")'),
+  'no draft marker in the list'
+);
+ok(
+  'the marker is not colour alone',
+  /editan belum diterbitkan/i.test(await evalIn('document.querySelector(".cs-dot")?.textContent ?? ""')),
+  'the dot carries no text alternative'
+);
+
+// Put it back. `confirm()` is stubbed because a native dialog would block CDP.
+await go(firstEditor);
+// A native confirm() would block CDP outright, so it is stubbed rather than
+// dismissed — the point being tested is what happens after the owner agrees.
+await evalIn('window.confirm = () => true');
+await evalIn('[...document.querySelectorAll("button")].find(b => /buang draf/i.test(b.textContent)).click()');
+ok(
+  'discarding a draft restores the live version',
+  await waitFor(
+    '/versi yang sedang tayang/i.test(document.querySelector(".cs-lede")?.textContent ?? "")'
+  ),
+  await evalIn('document.querySelector(".cs-lede")?.textContent ?? "(nothing)"')
 );
 
 /* ------------------------------------------------------------- signing out */
