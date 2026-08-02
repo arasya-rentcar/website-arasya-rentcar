@@ -108,6 +108,44 @@ const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
 const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
 await send('Page.enable', {}, sessionId);
 await send('Runtime.enable', {}, sessionId);
+// Network/resource failures land here, not in Runtime — a chunk that 404s never
+// throws, it just never runs, and the page looks like a feature that stopped
+// working.
+await send('Log.enable', {}, sessionId);
+
+/**
+ * The page's own console and uncaught errors.
+ *
+ * Without this, a client component that fails to hydrate looks exactly like a
+ * broken feature: the server-rendered markup is all present and correct, every
+ * "is it on screen" assertion passes, and nothing reacts to input. The reason
+ * is always in the browser console, which was being thrown away.
+ */
+const pageErrors = [];
+ws.addEventListener('message', (ev) => {
+  const m = JSON.parse(ev.data);
+  if (m.method === 'Runtime.exceptionThrown') {
+    const d = m.params?.exceptionDetails;
+    pageErrors.push(`uncaught: ${d?.exception?.description ?? d?.text ?? 'unknown'}`);
+  }
+  if (m.method === 'Log.entryAdded' && ['error', 'warning'].includes(m.params?.entry?.level)) {
+    const e = m.params.entry;
+    pageErrors.push(`${e.source}: ${e.text}${e.url ? ` (${e.url})` : ''}`.slice(0, 400));
+  }
+  if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(m.params?.type)) {
+    const text = (m.params.args ?? [])
+      .map((a) => a.value ?? a.description ?? '')
+      .join(' ')
+      .trim();
+    if (text) pageErrors.push(`console.${m.params.type}: ${text.slice(0, 400)}`);
+  }
+});
+
+/** Drains what the page has complained about since the last call. */
+function drainPageErrors() {
+  const out = pageErrors.splice(0, pageErrors.length);
+  return [...new Set(out)];
+}
 
 let failures = 0;
 const ok = (label, cond, detail = '') => {
@@ -171,6 +209,67 @@ async function clickButton(pattern, timeoutMs = 10000) {
 }
 
 /**
+ * Types into a React-controlled field, found by its visible label.
+ *
+ * Retries until the form registers the change, because a fixed wait races
+ * hydration: the element exists in the server-rendered HTML long before React
+ * attaches its listeners, so setting `.value` succeeds, nothing reacts, and the
+ * failure reads as "the counter is broken" rather than "the page was not ready".
+ * Confirmed by the marker landing in the DOM while `dirty` never flipped.
+ *
+ * The unsaved-changes indicator is the signal, since that is precisely the
+ * form admitting it saw the edit.
+ */
+async function setFieldByLabel(label, value, timeoutMs = 12000) {
+  const deadline = Date.now() + timeoutMs;
+  const script = `(() => {
+    const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
+    if (!lab) return { ok: false, why: 'no field labelled ' + ${JSON.stringify(label)} };
+    const el = document.getElementById(lab.htmlFor);
+    if (!el) return { ok: false, why: 'label points at no element' };
+    const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(value)});
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return { ok: true };
+  })()`;
+
+  let why = 'the form never registered the change';
+  while (Date.now() < deadline) {
+    const res = await evalIn(script).catch(() => ({ ok: false, why: 'navigating' }));
+    if (!res.ok) why = res.why;
+    else {
+      await new Promise((r) => setTimeout(r, 250));
+      // If React re-rendered from unchanged state it will have overwritten the
+      // value; if it never ran, the value is still what was set. The two look
+      // identical from outside and mean completely different things.
+      const held = await evalIn(`(() => {
+        const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
+        const el = lab && document.getElementById(lab.htmlFor);
+        return el ? el.value : null;
+      })()`).catch(() => null);
+      why =
+        held === value
+          ? 'the DOM kept the new value but React never re-rendered — the page is not hydrated'
+          : `React overwrote the field back to ${JSON.stringify(held)} — state did not change`;
+      const registered = await evalIn(
+        '/belum disimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")'
+      ).catch(() => false);
+      if (registered) return { ok: true };
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return { ok: false, why };
+}
+
+/** Reads a field's value by its visible label. */
+const fieldValueByLabel = (label) => `(() => {
+  const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
+  if (!lab) return null;
+  const el = document.getElementById(lab.htmlFor);
+  return el ? el.value : null;
+})()`;
+
+/**
  * Polls until an expression is truthy.
  *
  * Discarding a draft ends in `location.reload()`, so a fixed sleep followed by
@@ -209,6 +308,39 @@ const typeInto = (selector, value) => `(() => {
 })()`;
 
 console.log(`\nContent Studio sign-in — ${BASE}`);
+
+/**
+ * Refuses to run against a server serving a build whose assets are gone.
+ *
+ * `npm run start` fails with EADDRINUSE when an older instance still holds the
+ * port — and the shell reports nothing, because the old server answers every
+ * request. It serves HTML from the build it loaded at startup while `.next` on
+ * disk has since been replaced, so every chunk 400s and no page hydrates. From
+ * inside the browser that is indistinguishable from a feature that stopped
+ * working: the markup is all there, and nothing responds to input.
+ *
+ * One fetch rules it out, and names the cause instead of leaving it to be
+ * inferred from six failing assertions.
+ */
+{
+  const html = await (await fetch(`${BASE}/admin/login`)).text();
+  // Any chunk will do, and the build does not always emit a `webpack-*.js` —
+  // looking for that specific name made the check silently skip itself.
+  const chunk = /\/_next\/static\/chunks\/[a-zA-Z0-9._-]+\.js/.exec(html)?.[0];
+  if (chunk) {
+    const res = await fetch(BASE + chunk);
+    if (!res.ok) {
+      console.error(
+        `\n  ✗ the server is serving a stale build — ${chunk} returns ${res.status}.` +
+          `\n      An older \`next start\` is probably still holding the port (EADDRINUSE).` +
+          `\n      Stop it and start again; nothing below would be meaningful.\n`
+      );
+      chrome.kill();
+      process.exitCode = 1;
+      throw new Error('stale build');
+    }
+  }
+}
 
 /* ------------------------------------------------------------ the redirect */
 
@@ -350,28 +482,32 @@ ok(
   'template/variant appear to be editable'
 );
 
-// The counter has to react to typing, or it is decoration.
-const beforeCount = await evalIn('document.querySelector(".cs-count span:last-child")?.textContent ?? ""');
+// The counter has to react to typing, or it is decoration. Targets the meta
+// title by label rather than "first input that happens to have a counter" —
+// several fields carry a hint, so position was never a reliable way to find it.
 const MARKER = `QA draft marker ${Date.now()}`;
-await evalIn(`(() => {
-  const inputs = [...document.querySelectorAll('input.ar-field__input')];
-  const el = inputs.find(i => i.closest('div')?.querySelector('.cs-count'));
-  if (!el) return false;
-  const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-  set.call(el, ${JSON.stringify(MARKER)});
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  return true;
-})()`);
-await new Promise((r) => setTimeout(r, 400));
+const counterOf = `(() => {
+  const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith('Meta title'));
+  const box = lab?.parentElement?.querySelector('.cs-count span:last-child');
+  return box ? box.textContent : null;
+})()`;
+
+const beforeCount = await evalIn(counterOf);
+const typed = await setFieldByLabel('Meta title', MARKER);
+
+// One assertion covers both: the field took the text and the form noticed. They
+// cannot be separated without reintroducing the hydration race.
+ok(
+  'typing is registered and announced as unsaved',
+  typed.ok,
+  typed.ok ? '' : `${typed.why}${drainPageErrors().map((e) => `\n      ${e}`).join('')}`
+);
+
+const afterCount = await evalIn(counterOf);
 ok(
   'the character counter follows what is typed',
-  (await evalIn('document.querySelector(".cs-count span:last-child")?.textContent ?? ""')) !== beforeCount,
-  'the counter did not move'
-);
-ok(
-  'unsaved changes are announced',
-  /belum disimpan/i.test(await evalIn('document.querySelector(".cs-bar-status")?.textContent ?? ""')),
-  'nothing told the owner there were unsaved changes'
+  afterCount !== null && afterCount !== beforeCount,
+  `counter went from ${JSON.stringify(beforeCount)} to ${JSON.stringify(afterCount)}`
 );
 
 await clickButton(/simpan draf/i);
@@ -437,6 +573,65 @@ ok(
   await evalIn('document.querySelector(".cs-lede")?.textContent ?? "(nothing)"')
 );
 
+/* ---------------------------------------------------------- site settings */
+
+// Staged and discarded, never published. These fields are on all 31 pages, so
+// a test that published them would be rewriting the whole site to prove a form
+// works.
+console.log('\nsite settings');
+
+await go('/admin');
+ok(
+  'the nav offers Situs & Global',
+  await evalIn('[...document.querySelectorAll(".cs-nav-link")].some(a => /situs/i.test(a.textContent))'),
+  'no way to reach the global settings'
+);
+ok(
+  'the current section is marked for assistive tech, not only in colour',
+  await evalIn('!!document.querySelector(\'.cs-nav-link[aria-current="page"]\')'),
+  'no aria-current on the nav'
+);
+
+await go('/admin/situs');
+ok('the settings screen opens', await evalIn('!!document.querySelector(".cs-editor")'));
+ok(
+  'official numbers are listed as editable rows',
+  (await evalIn('document.querySelectorAll(".cs-listed-row").length')) > 0,
+  'no list rows rendered'
+);
+ok(
+  'the main WhatsApp number is a picker, not free text',
+  await evalIn('document.getElementById("wa-main")?.tagName === "SELECT"'),
+  'an unlisted number could be typed in'
+);
+
+// Add / reorder / remove, the three things the handoff asks for.
+const rowsBefore = await evalIn('document.querySelectorAll(".cs-listed-row").length');
+await clickButton(/tambah/i);
+await waitFor(`document.querySelectorAll(".cs-listed-row").length === ${rowsBefore + 1}`);
+ok('adding a row works', (await evalIn('document.querySelectorAll(".cs-listed-row").length')) === rowsBefore + 1);
+
+ok(
+  'the first row cannot be moved up, the last cannot be moved down',
+  await evalIn(`(() => {
+    const ups = [...document.querySelectorAll('.cs-icon-btn[aria-label^="Naikkan"]')];
+    const downs = [...document.querySelectorAll('.cs-icon-btn[aria-label^="Turunkan"]')];
+    return ups[0]?.disabled === true && downs[downs.length - 1]?.disabled === true;
+  })()`),
+  'reorder buttons at the ends were enabled'
+);
+
+ok(
+  'reorder and delete buttons say which row they act on',
+  await evalIn(`[...document.querySelectorAll('.cs-icon-btn')].every(b => (b.getAttribute('aria-label') ?? '').length > 8)`),
+  'icon-only buttons with no accessible name'
+);
+
+await evalIn('window.confirm = () => true');
+await evalIn('document.querySelectorAll(\'.cs-icon-btn[aria-label^="Hapus"]\')[' + rowsBefore + '].click()');
+await waitFor(`document.querySelectorAll(".cs-listed-row").length === ${rowsBefore}`);
+ok('removing a row works', (await evalIn('document.querySelectorAll(".cs-listed-row").length')) === rowsBefore);
+
 /* -------------------------------------------------------------- publishing */
 
 /**
@@ -452,34 +647,16 @@ ok(
  */
 console.log('\npublishing');
 
-// Reads a field by its visible label, so the test does not depend on input order.
-const fieldValue = (label) => `(() => {
-  const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
-  if (!lab) return null;
-  const el = document.getElementById(lab.htmlFor);
-  return el ? el.value : null;
-})()`;
-
-const setField = (label, value) => `(() => {
-  const lab = [...document.querySelectorAll('label.cs-label')].find(l => l.textContent.trim().startsWith(${JSON.stringify(label)}));
-  if (!lab) return false;
-  const el = document.getElementById(lab.htmlFor);
-  if (!el) return false;
-  const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-  Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(value)});
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  return true;
-})()`;
-
 await go(firstEditor);
-const slug = await evalIn(fieldValue('Slug (Indonesia)'));
-const originalTitle = await evalIn(fieldValue('Meta title'));
+const slug = await evalIn(fieldValueByLabel('Slug (Indonesia)'));
+const originalTitle = await evalIn(fieldValueByLabel('Meta title'));
 const publishMarker = `QA terbit ${Date.now()}`;
 
 ok('the entry has a slug and a meta title to work with', Boolean(slug && originalTitle), `slug=${slug}`);
 
 async function saveAndPublish(title) {
-  await evalIn(setField('Meta title', title));
+  const t = await setFieldByLabel('Meta title', title);
+  if (!t.ok) throw new Error(`could not set the meta title: ${t.why}`);
   await clickButton(/simpan draf/i);
   await waitFor('/tersimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")');
   await evalIn('window.confirm = () => true');

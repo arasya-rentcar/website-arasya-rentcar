@@ -49,7 +49,7 @@ export default async function LocationEditor({ params }: { params: Promise<{ key
   ).replace(/\/$/, '');
 
   return (
-    <AdminShell email={user.email}>
+    <AdminShell email={user.email} active="konten">
       <Link href="/admin" className="cs-back">
         ← Semua konten
       </Link>

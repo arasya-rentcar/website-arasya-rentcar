@@ -175,6 +175,147 @@
   cursor: pointer;
 }
 
+/* --------------------------------------------------------------- admin nav */
+
+.cs-nav {
+  display: flex;
+  gap: var(--ar-space-1, 4px);
+  flex-wrap: wrap;
+}
+
+.cs-nav-link {
+  padding: 6px 12px;
+  border-radius: var(--ar-radius-full, 999px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ar-color-gray-500, #64748b);
+  text-decoration: none;
+  /* Reserves the bold weight's width so the label does not shift when it
+     becomes current — the same trick the public nav uses. */
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cs-nav-link:hover {
+  background: var(--ar-color-gray-100, #f1f5f9);
+  color: var(--ar-color-gray-900, #0f172a);
+}
+
+/* Underline as well as colour: WCAG 1.4.1 — current position must not be
+   carried by hue alone. `aria-current` drives both, so they cannot disagree. */
+.cs-nav-link[aria-current='page'] {
+  background: var(--ar-color-primary, #046bd2);
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------- list editor */
+
+.cs-listed {
+  display: grid;
+  gap: var(--ar-space-2, 8px);
+}
+
+.cs-listed-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ar-space-3, 12px);
+}
+
+.cs-listed-count {
+  color: var(--ar-color-gray-500, #64748b);
+  font-weight: 500;
+}
+
+.cs-listed-head .ar-btn {
+  margin-left: auto;
+}
+
+.cs-listed-empty {
+  padding: var(--ar-space-4, 16px);
+  border: 1px dashed var(--ar-color-gray-300, #cbd5e1);
+  border-radius: var(--ar-radius-md, 8px);
+  text-align: center;
+  margin: 0;
+}
+
+.cs-listed-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ar-space-3, 12px);
+}
+
+.cs-listed-row {
+  border: 1px solid var(--ar-color-gray-200, #e2e8f0);
+  border-radius: var(--ar-radius-md, 8px);
+  background: var(--ar-color-gray-50, #f8fafc);
+  overflow: hidden;
+}
+
+.cs-listed-row-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ar-space-2, 8px);
+  padding: var(--ar-space-2, 8px) var(--ar-space-3, 12px);
+  background: #ffffff;
+  border-bottom: 1px solid var(--ar-color-gray-200, #e2e8f0);
+}
+
+.cs-listed-row-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cs-listed-row-tools {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cs-listed-row-body {
+  padding: var(--ar-space-3, 12px);
+  display: grid;
+  gap: var(--ar-space-3, 12px);
+}
+
+.cs-icon-btn {
+  /* 32px is below the 44px touch target the public pages hold themselves to.
+     Accepted here and only here: these sit three-to-a-row inside a dense
+     editing surface used on a laptop, and 44px each would push the row title
+     off screen on narrow viewports. */
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ar-color-gray-300, #cbd5e1);
+  border-radius: var(--ar-radius-sm, 6px);
+  background: #ffffff;
+  color: var(--ar-color-gray-700, #334155);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cs-icon-btn:hover:not(:disabled) {
+  background: var(--ar-color-gray-100, #f1f5f9);
+}
+
+.cs-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cs-icon-btn-danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
 /* ----------------------------------------------------------------- listing */
 
 .cs-section {

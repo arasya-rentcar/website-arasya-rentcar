@@ -185,6 +185,46 @@ export function publishPost(
 }
 
 /**
+ * Publishes the global settings row.
+ *
+ * Separate from `publishEntity` because the singleton has neither a `key` nor a
+ * `status` — it is always live, which is why `site_settings` is readable
+ * without a status filter in the first place. There is also no URL-space
+ * question: settings never create a page.
+ *
+ * It does touch every page, and more thoroughly than a location does. The
+ * WhatsApp number, the official-numbers panel, the bank details in the payment
+ * FAQ, the address in the JSON-LD and the footer are on all 31 pages, so a
+ * partial revalidation here would leave some pages advertising a phone number
+ * the business no longer answers.
+ */
+export async function publishSite(
+  supabase: SupabaseClient,
+  patch: Record<string, unknown>
+): Promise<PublishResult> {
+  const { columns, ignored } = toColumns('site', patch);
+
+  if (!Object.keys(columns).length) {
+    return { ok: false, error: 'Tidak ada perubahan untuk diterbitkan.' };
+  }
+
+  const { error } = await supabase.from('site_settings').update(columns).eq('id', true);
+  if (error) return { ok: false, error: error.message };
+
+  await discardDraft(supabase, 'site', 'site');
+
+  const paths = await allPaths(supabase);
+  for (const path of paths) revalidatePath(path);
+
+  return {
+    ok: true,
+    ignored: ignored.length ? ignored : undefined,
+    revalidated: paths.length,
+    rebuild: 'not-needed',
+  };
+}
+
+/**
  * Regenerates every page without changing content.
  *
  * The escape hatch for the case ISR cannot see: content edited directly in the

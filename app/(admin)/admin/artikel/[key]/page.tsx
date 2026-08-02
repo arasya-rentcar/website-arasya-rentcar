@@ -46,7 +46,7 @@ export default async function PostEditor({ params }: { params: Promise<{ key: st
   ).replace(/\/$/, '');
 
   return (
-    <AdminShell email={user.email}>
+    <AdminShell email={user.email} active="konten">
       <Link href="/admin" className="cs-back">
         ← Semua konten
       </Link>

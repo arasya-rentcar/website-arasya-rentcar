@@ -31,7 +31,7 @@ export default async function AdminHome() {
   const pending = new Set(drafts.map((d) => `${d.entity}:${d.entity_id}`));
 
   return (
-    <AdminShell email={user.email}>
+    <AdminShell email={user.email} active="konten">
       <h1 className="cs-h1">Konten</h1>
       <p className="cs-lede">
         {locations.length} halaman kota · {posts.length} artikel
