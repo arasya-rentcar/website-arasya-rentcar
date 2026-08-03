@@ -4,8 +4,17 @@ import { useMemo, useState, useTransition } from 'react';
 import { Badge, Button } from '@/design-system';
 import { validateLocation, type Issue } from '@/lib/validate';
 import { waDigits } from '@/lib/shared';
-import type { Location, Site } from '@/types';
+import type {
+  Destination,
+  DirectoryEntry,
+  FaqItem,
+  Location,
+  RouteRow,
+  Site,
+  TrustCard,
+} from '@/types';
 import { Field, IssueList, SerpPreview } from '../../_components/fields';
+import { ListEditor } from '../../_components/list-editor';
 import { discardLocation, publishLocationAction, saveLocation } from './actions';
 import { describePublish } from '../../_components/publish';
 
@@ -16,8 +25,7 @@ import { describePublish } from '../../_components/publish';
  * are shown but locked: they choose which of the eight layouts renders, and a
  * wrong value there does not produce bad copy, it produces a page that does not
  * work. They are a developer's decision with a migration behind it, not
- * something to change while editing a paragraph. Lists (destinations, routes,
- * FAQ) land in the next commit; this one covers every scalar.
+ * something to change while editing a paragraph.
  */
 
 /** Fields this form owns. Anything outside it is never written to the draft. */
@@ -37,6 +45,12 @@ const EDITABLE = [
   'pickupPoints',
   'waPhone',
   'editorial',
+  'destinations',
+  'routes',
+  'faqExtra',
+  'areaServed',
+  'cityDirectory',
+  'trust',
 ] as const;
 
 export function LocationForm({
@@ -258,6 +272,227 @@ export function LocationForm({
             hint="Disisipkan ke dalam FAQ standar."
           />
         </fieldset>
+
+        <fieldset className="cs-fieldset">
+          <legend>Destinasi</legend>
+          <ListEditor
+            label="Kartu destinasi"
+            hint="Deskripsinya wajib unik per kota. Ini bagian teks yang paling dilihat mesin pencari saat menilai apakah dua halaman kota sebenarnya satu halaman yang sama."
+            items={value.destinations ?? []}
+            onChange={(next) => set('destinations', next)}
+            blank={(): Destination => ({ area: '', name: '', description: '' })}
+            rowLabel={(d) => d.name || '(tanpa nama)'}
+            renderRow={(d, update) => (
+              <>
+                <Field label="Nama" value={d.name} onChange={(v) => update({ name: v })} />
+                <Field label="Area" value={d.area} onChange={(v) => update({ area: v })} />
+                <Field
+                  label="Deskripsi"
+                  value={d.description}
+                  onChange={(v) => update({ description: v })}
+                  multiline
+                  rows={3}
+                />
+                <Field
+                  label="Foto"
+                  value={d.image ?? ''}
+                  onChange={(v) => update({ image: v || undefined })}
+                  hint="Path dari root situs, atau object path di Supabase Storage. Unggah berkas menyusul."
+                />
+
+                {/*
+                  Attribution is a licence obligation, not a caption. Under
+                  CC BY / BY-SA the credit must stay visible, so these fields are
+                  editable rather than hidden — and the warning says what has to
+                  happen when the photo is swapped, which is the moment the old
+                  credit silently becomes a false statement about the new one.
+                */}
+                {d.imageCredit ? (
+                  <div className="cs-listed" style={{ gap: 8 }}>
+                    <p className="cs-alert cs-alert-info" style={{ marginBottom: 0 }}>
+                      Foto ini milik orang lain. Kreditnya wajib tampil menurut lisensinya —
+                      jangan dikosongkan. Kalau fotonya diganti dengan milik Arasya, kosongkan
+                      seluruh bagian ini juga.
+                    </p>
+                    <Field
+                      label="Pembuat"
+                      value={d.imageCredit.author}
+                      onChange={(v) =>
+                        update({ imageCredit: { ...d.imageCredit!, author: v } })
+                      }
+                    />
+                    <Field
+                      label="Judul karya"
+                      value={d.imageCredit.title ?? ''}
+                      onChange={(v) =>
+                        update({ imageCredit: { ...d.imageCredit!, title: v || undefined } })
+                      }
+                    />
+                    <Field
+                      label="Sumber (URL)"
+                      value={d.imageCredit.sourceUrl}
+                      onChange={(v) =>
+                        update({ imageCredit: { ...d.imageCredit!, sourceUrl: v } })
+                      }
+                    />
+                    <Field
+                      label="Lisensi"
+                      value={d.imageCredit.licence}
+                      onChange={(v) =>
+                        update({ imageCredit: { ...d.imageCredit!, licence: v } })
+                      }
+                    />
+                    <Field
+                      label="URL lisensi"
+                      value={d.imageCredit.licenceUrl}
+                      onChange={(v) =>
+                        update({ imageCredit: { ...d.imageCredit!, licenceUrl: v } })
+                      }
+                    />
+                    <Field
+                      label="Perubahan yang dilakukan"
+                      value={d.imageCredit.modified ?? ''}
+                      onChange={(v) =>
+                        update({ imageCredit: { ...d.imageCredit!, modified: v || undefined } })
+                      }
+                      hint="Wajib untuk lisensi BY-SA. Contoh: dipotong 16:9."
+                    />
+                  </div>
+                ) : (
+                  <p className="cs-hint">
+                    Foto milik Arasya — tanpa kredit. Kalau nanti dipakai foto pihak lain,
+                    kreditnya harus ditambahkan.
+                  </p>
+                )}
+              </>
+            )}
+          />
+        </fieldset>
+
+        <fieldset className="cs-fieldset">
+          <legend>Rute</legend>
+          <ListEditor
+            label="Baris rute"
+            items={value.routes ?? []}
+            onChange={(next) => set('routes', next)}
+            blank={(): RouteRow => ({ to: '', duration: '', note: '' })}
+            rowLabel={(r) => r.to || '(tanpa tujuan)'}
+            renderRow={(r, update) => (
+              <>
+                <Field label="Tujuan" value={r.to} onChange={(v) => update({ to: v })} />
+                <Field
+                  label="Durasi"
+                  value={r.duration}
+                  onChange={(v) => update({ duration: v })}
+                  hint="Contoh: 2–3 jam"
+                />
+                <Field label="Catatan" value={r.note} onChange={(v) => update({ note: v })} multiline rows={2} />
+              </>
+            )}
+          />
+        </fieldset>
+
+        <fieldset className="cs-fieldset">
+          <legend>FAQ tambahan</legend>
+          <ListEditor
+            label="Pertanyaan"
+            hint="Ditambahkan setelah FAQ standar, dan ikut masuk ke data terstruktur FAQPage. Jawabannya harus benar-benar menjawab — pertanyaan hiasan justru merugikan."
+            items={value.faqExtra ?? []}
+            onChange={(next) => set('faqExtra', next)}
+            blank={(): FaqItem => ({ question: '', answer: '' })}
+            rowLabel={(f) => f.question || '(tanpa pertanyaan)'}
+            renderRow={(f, update) => (
+              <>
+                <Field label="Pertanyaan" value={f.question} onChange={(v) => update({ question: v })} />
+                <Field
+                  label="Jawaban"
+                  value={f.answer}
+                  onChange={(v) => update({ answer: v })}
+                  multiline
+                  rows={3}
+                />
+              </>
+            )}
+          />
+        </fieldset>
+
+        <fieldset className="cs-fieldset">
+          <legend>Area layanan</legend>
+          <Field
+            label="Daftar area"
+            value={(value.areaServed ?? []).join('\n')}
+            onChange={(v) =>
+              set(
+                'areaServed',
+                v.split('\n').map((x) => x.trim()).filter(Boolean)
+              )
+            }
+            multiline
+            rows={6}
+            hint="Satu area per baris. Masuk ke data terstruktur sebagai areaServed."
+          />
+        </fieldset>
+
+        {value.cityDirectory && (
+          <fieldset className="cs-fieldset">
+            <legend>Direktori kota</legend>
+            <ListEditor
+              label="Kota"
+              hint="Halaman negara saja. Slug kosong berarti kota itu belum punya halaman sendiri, dan kartunya tampil sebagai “segera”."
+              items={value.cityDirectory}
+              onChange={(next) => set('cityDirectory', next)}
+              blank={(): DirectoryEntry => ({ name: '', slug: null, status: 'Segera', description: '' })}
+              rowLabel={(d) => d.name || '(tanpa nama)'}
+              renderRow={(d, update) => (
+                <>
+                  <Field label="Nama" value={d.name} onChange={(v) => update({ name: v })} />
+                  <Field
+                    label="Slug halaman"
+                    value={d.slug ?? ''}
+                    onChange={(v) => update({ slug: v || null })}
+                    hint="Kosongkan bila belum ada halamannya. Jangan diterjemahkan — ini alamat, bukan teks."
+                  />
+                  <Field
+                    label="Deskripsi"
+                    value={d.description}
+                    onChange={(v) => update({ description: v })}
+                    multiline
+                    rows={2}
+                  />
+                </>
+              )}
+            />
+          </fieldset>
+        )}
+
+        {value.trust && (
+          <fieldset className="cs-fieldset">
+            <legend>Kartu kepercayaan — khusus halaman ini</legend>
+            <p className="cs-hint">
+              Menggantikan kartu global sepenuhnya. Kosongkan seluruh daftar untuk kembali memakai
+              yang global.
+            </p>
+            <ListEditor
+              label="Kartu"
+              items={value.trust}
+              onChange={(next) => set('trust', next.length ? next : undefined)}
+              blank={(): TrustCard => ({ preset: 'shield', title: '', description: '' })}
+              rowLabel={(t) => t.title || '(tanpa judul)'}
+              renderRow={(t, update) => (
+                <>
+                  <Field label="Judul" value={t.title} onChange={(v) => update({ title: v })} />
+                  <Field
+                    label="Deskripsi"
+                    value={t.description}
+                    onChange={(v) => update({ description: v })}
+                    multiline
+                    rows={2}
+                  />
+                </>
+              )}
+            />
+          </fieldset>
+        )}
 
         <fieldset className="cs-fieldset">
           <legend>WhatsApp</legend>

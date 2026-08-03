@@ -573,6 +573,41 @@ ok(
   await evalIn('document.querySelector(".cs-lede")?.textContent ?? "(nothing)"')
 );
 
+/* ------------------------------------------------------------ article body */
+
+// Nothing is saved here. The article body is the one thing that had no editor
+// at all, so this checks it exists and behaves; the publish round-trip below
+// already proves the write path on a landing page.
+console.log('\narticle body');
+
+await go('/admin');
+const firstArticle = await evalIn(
+  '(() => { const a = [...document.querySelectorAll(".cs-row")].find(x => x.href.includes("/admin/artikel/")); return a ? new URL(a.href).pathname : null; })()'
+);
+ok('there is an article to open', Boolean(firstArticle), 'no article rows in the list');
+
+if (firstArticle) {
+  await go(firstArticle);
+  ok(
+    'the body is editable as sections',
+    (await evalIn('document.querySelectorAll(".cs-listed-row").length')) >= 3,
+    `${await evalIn('document.querySelectorAll(".cs-listed-row").length')} section rows — the editorial rule is at least 3`
+  );
+  ok(
+    'each section exposes a heading and its paragraphs',
+    await evalIn(`(() => {
+      const labels = [...document.querySelectorAll('.cs-listed-row-body label.cs-label')].map(l => l.textContent.trim());
+      return labels.some(l => l.startsWith('Judul bagian')) && labels.some(l => l.startsWith('Paragraf'));
+    })()`),
+    'a section row is missing its fields'
+  );
+  ok(
+    'the city relation is a picker, not free text',
+    await evalIn('document.getElementById("city")?.tagName === "SELECT"'),
+    'a typo in the city key would become a dead internal link'
+  );
+}
+
 /* ---------------------------------------------------------- site settings */
 
 // Staged and discarded, never published. These fields are on all 31 pages, so

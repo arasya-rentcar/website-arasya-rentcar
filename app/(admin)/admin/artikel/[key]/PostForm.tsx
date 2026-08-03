@@ -3,20 +3,20 @@
 import { useMemo, useState, useTransition } from 'react';
 import { Badge, Button } from '@/design-system';
 import { validatePost, type Issue } from '@/lib/validate';
-import type { Location, Post } from '@/types';
+import type { Location, Post, PostSection } from '@/types';
 import { Field, IssueList, SerpPreview } from '../../_components/fields';
+import { ListEditor } from '../../_components/list-editor';
 import { discardPost, publishPostAction, savePost } from './actions';
 import { describePublish } from '../../_components/publish';
 
 /**
  * The editable half of a blog article.
  *
- * `sections` — the article body — lands with the other list editors in the next
- * commit. This covers identity, SEO and the two relations the handoff's
- * editorial rules are built on: exactly one city page, exactly two related
- * articles. Those relations are what make the blog support the landing pages
- * structurally rather than just sit next to them, so they are edited as
- * pickers, never as free text where a typo becomes a dead link.
+ * Covers identity, SEO, the body, and the two relations the handoff's editorial
+ * rules are built on: exactly one city page, exactly two related articles.
+ * Those relations are what make the blog support the landing pages structurally
+ * rather than just sit next to them, so they are edited as pickers — never as
+ * free text, where a typo becomes a dead link.
  */
 
 const EDITABLE = [
@@ -33,6 +33,11 @@ const EDITABLE = [
   'cityName',
   'citySlug',
   'related',
+  'sections',
+  'datePublished',
+  'dateModified',
+  'dateDisplay',
+  'updatedDisplay',
 ] as const;
 
 export function PostForm({
@@ -243,14 +248,80 @@ export function PostForm({
         </fieldset>
 
         <fieldset className="cs-fieldset">
+          <legend>Isi artikel</legend>
+          <ListEditor
+            label="Bagian"
+            hint="Aturan redaksi: minimal 3 bagian, dan setiap paragraf ditulis unik. Paragraf hasil template yang sama antar artikel adalah sinyal yang justru dihukum mesin pencari."
+            items={value.sections ?? []}
+            onChange={(next) => set('sections', next)}
+            blank={(): PostSection => ({ heading: '', paragraphs: [''] })}
+            rowLabel={(x) => x.heading || '(tanpa judul)'}
+            renderRow={(x, update) => (
+              <>
+                <Field label="Judul bagian" value={x.heading} onChange={(v) => update({ heading: v })} />
+                <Field
+                  label="Paragraf"
+                  value={(x.paragraphs ?? []).join('\n\n')}
+                  onChange={(v) =>
+                    update({
+                      paragraphs: v.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean),
+                    })
+                  }
+                  multiline
+                  rows={8}
+                  hint="Pisahkan paragraf dengan satu baris kosong."
+                />
+                <Field
+                  label="Daftar poin"
+                  value={(x.list ?? []).join('\n')}
+                  onChange={(v) => {
+                    const items = v.split('\n').map((l) => l.trim()).filter(Boolean);
+                    // Undefined, not an empty array: the template renders the
+                    // list block whenever the key exists, so an emptied field
+                    // would leave an empty <ul> on the page.
+                    update({ list: items.length ? items : undefined });
+                  }}
+                  multiline
+                  rows={4}
+                  hint="Satu poin per baris. Kosongkan bila bagian ini tidak punya daftar."
+                />
+              </>
+            )}
+          />
+        </fieldset>
+
+        <fieldset className="cs-fieldset">
+          <legend>Tanggal</legend>
+          <Field
+            label="Tanggal terbit"
+            value={value.datePublished ?? ''}
+            onChange={(v) => set('datePublished', v)}
+            hint="Format YYYY-MM-DD. Masuk ke JSON-LD sebagai datePublished."
+          />
+          <Field
+            label="Tanggal diperbarui"
+            value={value.dateModified ?? ''}
+            onChange={(v) => set('dateModified', v)}
+            hint="Perbarui setiap kali isinya direvisi — ini sinyal kesegaran yang dibaca mesin pencari, dan halaman menampilkannya sebagai “Diperbarui”."
+          />
+          <Field
+            label="Tanggal tampil"
+            value={value.dateDisplay}
+            onChange={(v) => set('dateDisplay', v)}
+            hint="Versi yang dibaca manusia, misalnya “12 Maret 2026”."
+          />
+          <Field
+            label="Diperbarui tampil"
+            value={value.updatedDisplay}
+            onChange={(v) => set('updatedDisplay', v)}
+          />
+        </fieldset>
+
+        <fieldset className="cs-fieldset">
           <legend>Struktur — dikunci</legend>
-          <p className="cs-hint">
-            Isi artikel (bagian, paragraf, daftar) menyusul di editor daftar.
-          </p>
           <div className="cs-row-meta" style={{ marginLeft: 0, flexWrap: 'wrap' }}>
             <Badge tone="neutral">key: {value.key}</Badge>
             <Badge tone="neutral">{value.sections?.length ?? 0} bagian</Badge>
-            <Badge tone="neutral">terbit: {value.datePublished || '—'}</Badge>
           </div>
         </fieldset>
       </div>

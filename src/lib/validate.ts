@@ -215,6 +215,51 @@ export function validateLocation(loc: Location, ctx: LocationContext): Issue[] {
     issues.push(...checkCopy(`editorial.paragraphs.${i}`, p))
   );
 
+  /* list rows — now that they are editable, a half-filled row can reach a page */
+  (loc.destinations ?? []).forEach((d, i) => {
+    if (!d.name?.trim()) issues.push(err(`destinations.${i}.name`, 'Nama destinasi wajib diisi.'));
+    if (!d.description?.trim())
+      issues.push(err(`destinations.${i}.description`, 'Deskripsi destinasi wajib diisi.'));
+    // The doorway-page rule applies to this text more than to any other on the
+    // page, so it goes through the positioning rules like the editorial does.
+    issues.push(...checkCopy(`destinations.${i}.description`, d.description));
+
+    // A credit that has lost its source or licence no longer discharges the
+    // obligation — it just looks like one.
+    if (d.imageCredit) {
+      const c = d.imageCredit;
+      if (!c.author?.trim() || !c.sourceUrl?.trim() || !c.licence?.trim() || !c.licenceUrl?.trim())
+        issues.push(
+          err(
+            `destinations.${i}.imageCredit`,
+            'Kredit foto harus lengkap: pembuat, sumber, nama lisensi, dan URL lisensi. Ini kewajiban lisensi, bukan keterangan tambahan.'
+          )
+        );
+      if (/BY-SA/i.test(c.licence ?? '') && !c.modified?.trim())
+        issues.push(
+          warn(
+            `destinations.${i}.imageCredit.modified`,
+            'Lisensi BY-SA mewajibkan penyebutan perubahan yang dilakukan pada karya.'
+          )
+        );
+    }
+  });
+
+  (loc.routes ?? []).forEach((r, i) => {
+    if (!r.to?.trim()) issues.push(err(`routes.${i}.to`, 'Tujuan rute wajib diisi.'));
+  });
+
+  (loc.faqExtra ?? []).forEach((f, i) => {
+    if (!f.question?.trim() || !f.answer?.trim())
+      issues.push(err(`faqExtra.${i}`, 'Pertanyaan dan jawaban wajib diisi — FAQ kosong ikut terkirim ke data terstruktur.'));
+  });
+
+  (loc.cityDirectory ?? []).forEach((d, i) => {
+    if (!d.name?.trim()) issues.push(err(`cityDirectory.${i}.name`, 'Nama kota wajib diisi.'));
+    if (d.slug && !SLUG_RE.test(d.slug))
+      issues.push(err(`cityDirectory.${i}.slug`, 'Slug tidak valid — ini alamat halaman, bukan teks bebas.'));
+  });
+
   /* English overlay, only once one exists */
   const en = loc.en;
   if (en) {
@@ -279,6 +324,13 @@ export function validatePost(post: Post, ctx: PostContext): Issue[] {
 
   if ((post.sections ?? []).length < 3)
     issues.push(warn('sections', `Aturan redaksi: minimal 3 bagian (sekarang ${(post.sections ?? []).length}).`));
+
+  (post.sections ?? []).forEach((s, i) => {
+    if (!s.heading?.trim()) issues.push(err(`sections.${i}.heading`, 'Judul bagian wajib diisi.'));
+    if (!(s.paragraphs ?? []).some((p) => p.trim()))
+      issues.push(err(`sections.${i}.paragraphs`, 'Bagian tanpa paragraf akan tampil sebagai judul kosong.'));
+    (s.paragraphs ?? []).forEach((p, j) => issues.push(...checkCopy(`sections.${i}.paragraphs.${j}`, p)));
+  });
 
   for (const [field, text] of [
     ['title', post.title],
