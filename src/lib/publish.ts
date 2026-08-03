@@ -225,6 +225,41 @@ export async function publishSite(
 }
 
 /**
+ * Publishes the charter registry behind `/travel`.
+ *
+ * Like the settings row: a singleton with no status and no URL space. The
+ * tariff data only renders on `/travel` and `/en/travel`, but revalidation
+ * still covers everything — the cost is a render per page on next request, and
+ * the alternative is maintaining a second, narrower list of paths that has to
+ * be kept correct as the site grows.
+ */
+export async function publishTravel(
+  supabase: SupabaseClient,
+  patch: Record<string, unknown>
+): Promise<PublishResult> {
+  const { columns, ignored } = toColumns('travel', patch);
+
+  if (!Object.keys(columns).length) {
+    return { ok: false, error: 'Tidak ada perubahan untuk diterbitkan.' };
+  }
+
+  const { error } = await supabase.from('travel_settings').update(columns).eq('id', true);
+  if (error) return { ok: false, error: error.message };
+
+  await discardDraft(supabase, 'travel', 'travel');
+
+  const paths = await allPaths(supabase);
+  for (const path of paths) revalidatePath(path);
+
+  return {
+    ok: true,
+    ignored: ignored.length ? ignored : undefined,
+    revalidated: paths.length,
+    rebuild: 'not-needed',
+  };
+}
+
+/**
  * Regenerates every page without changing content.
  *
  * The escape hatch for the case ISR cannot see: content edited directly in the

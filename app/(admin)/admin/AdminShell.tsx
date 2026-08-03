@@ -14,6 +14,7 @@ const SECTIONS = [
   { id: 'konten', href: '/admin', label: 'Konten' },
   { id: 'situs', href: '/admin/situs', label: 'Situs & Global' },
   { id: 'armada', href: '/admin/armada', label: 'Armada & Galeri' },
+  { id: 'travel', href: '/admin/travel', label: 'Rute & Tarif' },
 ] as const;
 
 export type AdminSection = (typeof SECTIONS)[number]['id'];

@@ -634,3 +634,25 @@
 .cs-upload-row .ar-btn {
   flex-shrink: 0;
 }
+
+/* ------------------------------------------------------------ tariff matrix */
+
+/*
+ * One column per unit, as many as fit. A route's prices are read across, so the
+ * cells stay side by side rather than stacking into a list that would hide the
+ * comparison the owner is actually making.
+ */
+.cs-prices {
+  display: grid;
+  gap: var(--ar-space-3, 12px);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  padding: var(--ar-space-3, 12px);
+  border: 1px solid var(--ar-color-gray-200, #e2e8f0);
+  border-radius: var(--ar-radius-md, 8px);
+  background: #ffffff;
+}
+
+.cs-prices > .cs-label {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}

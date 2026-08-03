@@ -4,14 +4,17 @@ import {
   LOCATION_COLUMNS,
   POST_COLUMNS,
   SITE_COLUMNS,
+  TRAVEL_COLUMNS,
   toLocation,
   toPost,
   toSite,
+  toTravel,
   type LocationRow,
   type PostRow,
   type SiteRow,
+  type TravelRow,
 } from './hydrate';
-import type { Location, Post, Site } from '@/types';
+import type { Location, Post, Site, Travel } from '@/types';
 
 /**
  * Reading and staging content for Content Studio.
@@ -333,5 +336,16 @@ export async function getStagedSite(supabase: SupabaseClient): Promise<Staged<Si
 
   const live = toSite(data as unknown as SiteRow);
   const draft = await getDraft(supabase, 'site', 'site');
+  return { live, merged: applyDraft(live, draft?.data), draft };
+}
+
+/* ------------------------------------------------------------------ travel */
+
+export async function getStagedTravel(supabase: SupabaseClient): Promise<Staged<Travel>> {
+  const { data, error } = await supabase.from('travel_settings').select(TRAVEL_COLUMNS).single();
+  if (error) throw new Error(`getStagedTravel: ${error.message}`);
+
+  const live = toTravel(data as unknown as TravelRow);
+  const draft = await getDraft(supabase, 'travel', 'travel');
   return { live, merged: applyDraft(live, draft?.data), draft };
 }

@@ -842,6 +842,74 @@ ok(
   'no unit-class section'
 );
 
+/* ------------------------------------------------------------ travel tariffs */
+
+console.log('\nroutes and tariffs');
+
+await go('/admin/travel');
+ok('the tariff screen opens', await evalIn('!!document.querySelector(".cs-editor")'));
+ok(
+  'routes carry a price cell per unit',
+  await evalIn(`(() => {
+    const units = [...document.querySelectorAll('legend')].find(l => /^unit$/i.test(l.textContent.trim()))
+      ?.parentElement?.querySelectorAll('.cs-listed-row').length ?? 0;
+    const firstMatrix = document.querySelector('.cs-prices');
+    if (!units || !firstMatrix) return false;
+    // One label for the group plus one per unit.
+    return firstMatrix.querySelectorAll('.cs-label').length === units + 1;
+  })()`),
+  'the price matrix does not match the unit list'
+);
+
+// The distinction the whole screen turns on: blank means "not served", which is
+// filtered out, and zero would advertise a free trip.
+{
+  const before = await evalIn(`(() => {
+    const cells = [...document.querySelectorAll('.cs-prices input.ar-field__input')];
+    const filled = cells.find(c => c.value.trim());
+    return filled ? filled.value : null;
+  })()`);
+
+  ok('at least one tariff is filled in to work with', Boolean(before), 'no priced cells found');
+
+  if (before) {
+    const cleared = await evalIn(`(() => {
+      const cells = [...document.querySelectorAll('.cs-prices input.ar-field__input')];
+      const el = cells.find(c => c.value.trim());
+      const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      set.call(el, '');
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    })()`);
+
+    await waitFor('/belum disimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")');
+
+    ok(
+      'clearing a tariff marks the unit as not serving that route',
+      cleared &&
+        (await evalIn(`(() => {
+          const cells = [...document.querySelectorAll('.cs-prices input.ar-field__input')];
+          const empty = cells.find(c => !c.value.trim());
+          const hint = empty?.closest('div')?.querySelector('.cs-hint')?.textContent ?? '';
+          return /tidak melayani/i.test(hint);
+        })()`)),
+      'an emptied cell did not say what emptying it means'
+    );
+  }
+}
+
+ok(
+  'origin codes are explained as ref-code fragments',
+  await evalIn(`(() => {
+    const hints = [...document.querySelectorAll('.cs-hint')].map(h => h.textContent);
+    return hints.some(h => /kode referensi/i.test(h));
+  })()`),
+  'nothing says why the origin code matters'
+);
+
+// Nothing is saved on this screen — reload to drop the cleared cell.
+await go('/admin/travel');
+
 /* -------------------------------------------------------------- publishing */
 
 /**

@@ -1,4 +1,4 @@
-import type { Location, Post, Site } from '@/types';
+import type { Location, Post, Site, Travel } from '@/types';
 import { waDigits } from './shared';
 
 /**
@@ -400,6 +400,68 @@ export function validateSite(site: Site): Issue[] {
           .join(', ')}). Ganti dengan ulasan Google asli sebelum peluncuran.`
       )
     );
+
+  return issues;
+}
+
+/* ------------------------------------------------------------------ travel */
+
+/**
+ * The charter registry behind `/travel`.
+ *
+ * Keys carry more weight here than anywhere else in the CMS. `routes[].prices`
+ * is keyed by unit key and `routes[].origin` by origin key, so renaming either
+ * does not rename the references — it orphans them, and the tariff checker
+ * simply stops offering that unit or that origin with nothing on screen to say
+ * why. Both are therefore checked for existence, not just for being non-empty.
+ */
+export function validateTravel(travel: Travel): Issue[] {
+  const issues: Issue[] = [];
+
+  const unitKeys = new Set<string>();
+  (travel.units ?? []).forEach((u, i) => {
+    if (!u.key?.trim()) issues.push(err(`units.${i}.key`, 'Kunci unit wajib diisi.'));
+    else if (unitKeys.has(u.key)) issues.push(err(`units.${i}.key`, `Kunci "${u.key}" dipakai dua kali.`));
+    unitKeys.add(u.key);
+    if (!u.name?.trim()) issues.push(err(`units.${i}.name`, 'Nama unit wajib diisi.'));
+    if (!u.capacity || u.capacity < 1)
+      issues.push(err(`units.${i}.capacity`, 'Kapasitas harus lebih dari 0.'));
+  });
+
+  const originKeys = new Set<string>();
+  (travel.origins ?? []).forEach((o, i) => {
+    if (!o.key?.trim()) issues.push(err(`origins.${i}.key`, 'Kunci asal wajib diisi.'));
+    else if (originKeys.has(o.key))
+      issues.push(err(`origins.${i}.key`, `Kunci "${o.key}" dipakai dua kali.`));
+    originKeys.add(o.key);
+    if (!o.name?.trim()) issues.push(err(`origins.${i}.name`, 'Nama asal wajib diisi.'));
+    // The code becomes the ref-code fragment on every WhatsApp lead from this
+    // origin (TRV-BGR-…), so an empty one makes those leads untraceable.
+    if (!o.code?.trim())
+      issues.push(err(`origins.${i}.code`, 'Kode wajib diisi — dipakai pada kode referensi setiap pesan WhatsApp dari asal ini.'));
+  });
+
+  (travel.routes ?? []).forEach((r, i) => {
+    if (!r.origin?.trim()) issues.push(err(`routes.${i}.origin`, 'Asal wajib dipilih.'));
+    else if (!originKeys.has(r.origin))
+      issues.push(err(`routes.${i}.origin`, `Asal "${r.origin}" tidak ada dalam daftar asal.`));
+
+    if (!r.dest?.trim()) issues.push(err(`routes.${i}.dest`, 'Kunci tujuan wajib diisi.'));
+    if (!r.destName?.trim()) issues.push(err(`routes.${i}.destName`, 'Nama tujuan wajib diisi.'));
+
+    const priced = Object.entries(r.prices ?? {}).filter(([, v]) => typeof v === 'number');
+    if (!priced.length)
+      issues.push(
+        err(`routes.${i}.prices`, 'Rute tanpa satu pun harga tidak akan pernah muncul di pengecek tarif.')
+      );
+
+    for (const [unitKey, price] of Object.entries(r.prices ?? {})) {
+      if (!unitKeys.has(unitKey))
+        issues.push(err(`routes.${i}.prices.${unitKey}`, `Unit "${unitKey}" tidak ada dalam daftar unit.`));
+      if (price === 0)
+        issues.push(err(`routes.${i}.prices.${unitKey}`, 'Harga 0 akan tampil sebagai Rp 0. Kosongkan bila unit ini tidak melayani rute tersebut.'));
+    }
+  });
 
   return issues;
 }
