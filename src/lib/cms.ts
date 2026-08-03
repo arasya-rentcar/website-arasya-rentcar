@@ -113,11 +113,36 @@ export async function saveDraft(
   entity: Entity,
   entityId: string,
   data: Record<string, unknown>,
-  userId: string
+  userId: string,
+  /**
+   * Merge into the existing draft's top-level fields instead of replacing it.
+   *
+   * Needed because two screens edit one row: `/admin/situs` owns settings,
+   * services, testimonials and trust cards, while `/admin/armada` owns fleet,
+   * unit classes and the gallery. Both stage into `('site', 'site')`, so a
+   * replacing write from either would silently discard whatever the other had
+   * staged — the owner would edit the fleet, save, and find their unpublished
+   * phone-number change gone with no error anywhere.
+   *
+   * Safe precisely because the two field sets are disjoint. Within a single
+   * form the patch still carries whole fields, so the reasoning in `applyDraft`
+   * is unchanged.
+   */
+  merge = false
 ): Promise<void> {
+  let payload = data;
+
+  if (merge) {
+    const existing = await getDraft(supabase, entity, entityId);
+    if (existing) payload = { ...existing.data, ...data };
+  }
+
   const { error } = await supabase
     .from('content_drafts')
-    .upsert({ entity, entity_id: entityId, data, updated_by: userId }, { onConflict: 'entity,entity_id' });
+    .upsert(
+      { entity, entity_id: entityId, data: payload, updated_by: userId },
+      { onConflict: 'entity,entity_id' }
+    );
   if (error) throw new Error(`saveDraft(${entity}/${entityId}): ${error.message}`);
 }
 

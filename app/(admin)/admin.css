@@ -612,3 +612,25 @@
   display: flex;
   gap: var(--ar-space-2, 8px);
 }
+
+/* ------------------------------------------------------------ image upload */
+
+.cs-upload {
+  display: grid;
+  gap: 4px;
+}
+
+.cs-upload-row {
+  display: flex;
+  gap: var(--ar-space-2, 8px);
+  align-items: center;
+}
+
+.cs-upload-row .ar-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cs-upload-row .ar-btn {
+  flex-shrink: 0;
+}

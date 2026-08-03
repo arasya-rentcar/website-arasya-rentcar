@@ -363,6 +363,31 @@ export function validateSite(site: Site): Issue[] {
       issues.push(err(`bankAccounts.${i}`, 'Baris rekening belum lengkap — bank, nomor, dan nama pemilik wajib diisi.'));
   });
 
+  (site.fleet ?? []).forEach((f, i) => {
+    if (!f.name?.trim()) issues.push(err(`fleet.${i}.name`, 'Nama unit wajib diisi.'));
+    if (!f.capacity || f.capacity < 1)
+      issues.push(err(`fleet.${i}.capacity`, 'Kapasitas harus lebih dari 0.'));
+    // A null price is a deliberate state — the card renders "Hubungi untuk
+    // harga terbaik" — but zero is not: it renders as Rp 0.
+    if (f.dalamKota === 0 || f.allin === 0)
+      issues.push(
+        err(`fleet.${i}`, 'Harga 0 akan tampil sebagai Rp 0. Kosongkan untuk “Hubungi untuk harga terbaik”.')
+      );
+  });
+
+  (site.genericUnits ?? []).forEach((u, i) => {
+    if (!u.name?.trim()) issues.push(err(`genericUnits.${i}.name`, 'Nama kelas wajib diisi.'));
+    if (!u.seats?.trim()) issues.push(err(`genericUnits.${i}.seats`, 'Kapasitas kelas wajib diisi.'));
+  });
+
+  (site.gallery ?? []).forEach((g, i) => {
+    if (!g.src?.trim()) issues.push(err(`gallery.${i}.src`, 'Berkas foto wajib diisi.'));
+    // Not cosmetic: an image with no alt text is invisible to a screen reader
+    // and to anyone whose connection dropped the file.
+    if (!g.alt?.trim())
+      issues.push(err(`gallery.${i}.alt`, 'Teks alternatif wajib diisi — tanpa itu foto ini tidak ada bagi pembaca layar.'));
+  });
+
   const placeholders = (site.testimonials ?? []).filter((t) =>
     PLACEHOLDER_REVIEWERS.includes(t.name)
   );

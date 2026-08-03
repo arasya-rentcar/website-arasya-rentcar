@@ -13,6 +13,7 @@ import { signOut } from './actions';
 const SECTIONS = [
   { id: 'konten', href: '/admin', label: 'Konten' },
   { id: 'situs', href: '/admin/situs', label: 'Situs & Global' },
+  { id: 'armada', href: '/admin/armada', label: 'Armada & Galeri' },
 ] as const;
 
 export type AdminSection = (typeof SECTIONS)[number]['id'];
