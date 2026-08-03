@@ -26,6 +26,8 @@ const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const PORT = 9229;
 const BASE = (process.env.QA_ORIGIN ?? 'http://localhost:3100').replace(/\/$/, '');
 const EMAIL = process.env.ADMIN_EMAIL;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PASSWORD = process.env.ADMIN_PASSWORD;
 
 if (!EMAIL || !PASSWORD) {
@@ -672,6 +674,131 @@ if (firstArticle) {
     await evalIn('document.getElementById("city")?.tagName === "SELECT"'),
     'a typo in the city key would become a dead internal link'
   );
+}
+
+/* ------------------------------------------------------------- English tab */
+
+console.log('\nEnglish tab');
+
+await go(firstEditor);
+ok(
+  'the editor offers a language tab',
+  (await evalIn('document.querySelectorAll(".cs-tab").length')) === 2,
+  'no ID/EN tabs'
+);
+
+await evalIn('[...document.querySelectorAll(".cs-tab")].find(t => /english/i.test(t.textContent)).click()');
+await waitFor('!!document.querySelector(".cs-source")');
+
+ok(
+  'switching announces which tab is current',
+  await evalIn(`(() => {
+    const en = [...document.querySelectorAll('.cs-tab')].find(t => /english/i.test(t.textContent));
+    return en?.getAttribute('aria-selected') === 'true';
+  })()`),
+  'aria-selected did not move to the English tab'
+);
+ok(
+  'every English field shows its Indonesian source',
+  await evalIn(`(() => {
+    const blocks = [...document.querySelectorAll('.cs-translate')];
+    return blocks.length > 0 && blocks.every(b => b.querySelector('.cs-source'));
+  })()`),
+  'a field has nothing to translate from'
+);
+ok(
+  'the source is marked as Indonesian for assistive tech',
+  await evalIn('document.querySelector(".cs-source")?.getAttribute("lang") === "id"'),
+  'a screen reader would pronounce the Indonesian source with English phonetics'
+);
+
+// The contract behind the whole overlay: the English side carries prose and
+// nothing else, so a licensed photo's attribution cannot be blanked from here.
+ok(
+  'destination photos and credits are not editable from the English tab',
+  await evalIn(`(() => {
+    const labels = [...document.querySelectorAll('.cs-translate label.cs-label')].map(l => l.textContent.trim());
+    return !labels.some(l => /^Foto|^Pembuat|^Lisensi|^Sumber/.test(l));
+  })()`),
+  'the English tab exposes a field that would overwrite the licence attribution'
+);
+
+ok(
+  'an untranslated field says what happens if it stays empty',
+  await evalIn(`(() => {
+    const inputs = [...document.querySelectorAll('.cs-translate textarea, .cs-translate input')];
+    return inputs.some(i => /belum diterjemahkan/i.test(i.placeholder ?? ''));
+  })()`),
+  'nothing explains that empty means "falls back to Indonesian"'
+);
+
+/*
+ * The highest-stakes property in the whole overlay, checked against what is
+ * actually written rather than what the form appears to do.
+ *
+ * Third-party destination photos carry a licence that requires the credit to
+ * stay visible. If an English translation wrote whole objects instead of prose,
+ * the merge would replace `image` and `imageCredit` with blanks — the page would
+ * still render, the photo would still be there, and the attribution would be
+ * gone. Nothing on screen would look wrong.
+ */
+if (SERVICE_KEY && SUPABASE_URL) {
+  const key = firstEditor.split('/').pop();
+  const marker = `QA translation ${Date.now()}`;
+
+  // Translate the first destination description, then save.
+  const typed = await evalIn(`(() => {
+    const blocks = [...document.querySelectorAll('.cs-translate')];
+    const block = blocks.find(b => b.querySelector('label')?.textContent.trim().startsWith('Deskripsi'));
+    const el = block?.querySelector('textarea, input');
+    if (!el) return false;
+    const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(marker)});
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  })()`);
+
+  if (!typed) {
+    ok('a destination description can be translated', false, 'no description field on the English tab');
+  } else {
+    await waitFor('/belum disimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")');
+    await clickButton(/simpan draf/i);
+    await waitFor('/tersimpan/i.test(document.querySelector(".cs-bar-status")?.textContent ?? "")');
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/content_drafts?entity=eq.location&entity_id=eq.${key}&select=data`,
+      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+    );
+    const [row] = await res.json();
+    const enDest = row?.data?.en?.destinations ?? [];
+    const stray = enDest.flatMap((d) =>
+      Object.keys(d).filter((k) => !['area', 'name', 'description'].includes(k))
+    );
+
+    ok('the translation was staged', enDest.length > 0, 'no English destinations in the draft');
+    ok(
+      'the English overlay carries prose only — no image, no licence credit',
+      stray.length === 0,
+      `it also wrote: ${[...new Set(stray)].join(', ')}`
+    );
+
+    // And the live row still has its attribution, untouched.
+    const liveRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/locations?key=eq.${key}&select=destinations`,
+      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+    );
+    const [live] = await liveRes.json();
+    const credited = (live?.destinations ?? []).filter((d) => d.imageCredit);
+    ok(
+      `the live photos keep their attribution (${credited.length} credited)`,
+      credited.every((d) => d.imageCredit?.author && d.imageCredit?.licenceUrl),
+      'a credit lost its author or licence URL'
+    );
+
+    await evalIn('window.confirm = () => true');
+    await clickButton(/buang draf/i);
+    await waitFor('/versi yang sedang tayang/i.test(document.querySelector(".cs-lede")?.textContent ?? "")');
+  }
 }
 
 /* ---------------------------------------------------------- site settings */

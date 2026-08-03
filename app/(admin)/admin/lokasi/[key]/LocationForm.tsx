@@ -10,11 +10,14 @@ import type {
   FaqItem,
   Location,
   RouteRow,
+  LocationTranslation,
   Site,
   TrustCard,
 } from '@/types';
 import { Field, IssueList, SerpPreview } from '../../_components/fields';
 import { ListEditor } from '../../_components/list-editor';
+import { LangTabs } from '../../_components/translate';
+import { LocationEn } from './LocationEn';
 import { discardLocation, publishLocationAction, saveLocation } from './actions';
 import { describePublish } from '../../_components/publish';
 
@@ -51,6 +54,7 @@ const EDITABLE = [
   'areaServed',
   'cityDirectory',
   'trust',
+  'en',
 ] as const;
 
 export function LocationForm({
@@ -82,9 +86,15 @@ export function LocationForm({
    * unable to publish it is the one sequence this screen has to get right.
    */
   const [draftExists, setDraftExists] = useState(hasDraft);
+  const [lang, setLang] = useState<'id' | 'en'>('id');
 
   const set = <K extends keyof Location>(field: K, v: Location[K]) => {
     setValue((prev) => ({ ...prev, [field]: v }));
+    setDirty(true);
+  };
+
+  const setEn = <K extends keyof LocationTranslation>(field: K, v: LocationTranslation[K]) => {
+    setValue((prev) => ({ ...prev, en: { ...(prev.en ?? {}), [field]: v } }));
     setDirty(true);
   };
 
@@ -150,6 +160,12 @@ export function LocationForm({
   return (
     <div className="cs-editor">
       <div>
+        <LangTabs lang={lang} onChange={setLang} translated={Boolean(value.en)} />
+
+        {lang === 'en' ? (
+          <LocationEn value={value} setEn={setEn} />
+        ) : (
+        <>
         <fieldset className="cs-fieldset">
           <legend>Identitas</legend>
           <Field label="Nama entri" value={value.name} onChange={(v) => set('name', v)} />
@@ -536,6 +552,8 @@ export function LocationForm({
             <Badge tone="neutral">negara: {value.country}</Badge>
           </div>
         </fieldset>
+        </>
+        )}
       </div>
 
       <aside className="cs-aside">

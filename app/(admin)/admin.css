@@ -656,3 +656,64 @@
   grid-column: 1 / -1;
   margin-bottom: 0;
 }
+
+/* --------------------------------------------------------------- lang tabs */
+
+.cs-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--ar-space-4, 16px);
+  border-bottom: 1px solid var(--ar-color-gray-200, #e2e8f0);
+}
+
+.cs-tab {
+  padding: 8px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ar-color-gray-500, #64748b);
+  cursor: pointer;
+  /* The underline is what marks the current tab, alongside the colour and
+     `aria-selected`. Colour alone would fail WCAG 1.4.1, and it is the only
+     signal in a two-item control where position tells you nothing. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.cs-tab[aria-selected='true'] {
+  color: var(--ar-color-primary, #046bd2);
+  border-bottom-color: var(--ar-color-primary, #046bd2);
+}
+
+/* ------------------------------------------------------------- translation */
+
+.cs-translate {
+  display: grid;
+  gap: 4px;
+}
+
+/*
+ * The Indonesian source, always visible above the field translating it.
+ *
+ * Styled as a quotation rather than a form value so it never reads as something
+ * to edit — the owner is looking at it, not filling it in.
+ */
+.cs-source {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--ar-color-gray-300, #cbd5e1);
+  background: var(--ar-color-gray-50, #f8fafc);
+  border-radius: 0 var(--ar-radius-sm, 6px) var(--ar-radius-sm, 6px) 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ar-color-gray-700, #334155);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cs-source-empty {
+  font-style: italic;
+  color: var(--ar-color-gray-500, #64748b);
+}

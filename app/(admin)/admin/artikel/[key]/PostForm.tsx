@@ -3,9 +3,11 @@
 import { useMemo, useState, useTransition } from 'react';
 import { Badge, Button } from '@/design-system';
 import { validatePost, type Issue } from '@/lib/validate';
-import type { Location, Post, PostSection } from '@/types';
+import type { Location, Post, PostSection, PostTranslation } from '@/types';
 import { Field, IssueList, SerpPreview } from '../../_components/fields';
 import { ListEditor } from '../../_components/list-editor';
+import { LangTabs } from '../../_components/translate';
+import { PostEn } from './PostEn';
 import { discardPost, publishPostAction, savePost } from './actions';
 import { describePublish } from '../../_components/publish';
 
@@ -38,6 +40,7 @@ const EDITABLE = [
   'dateModified',
   'dateDisplay',
   'updatedDisplay',
+  'en',
 ] as const;
 
 export function PostForm({
@@ -64,6 +67,12 @@ export function PostForm({
 
   /** Stateful, not the prop — see the note in LocationForm. */
   const [draftExists, setDraftExists] = useState(hasDraft);
+  const [lang, setLang] = useState<'id' | 'en'>('id');
+
+  const setEn = <K extends keyof PostTranslation>(field: K, v: PostTranslation[K]) => {
+    setValue((prev) => ({ ...prev, en: { ...(prev.en ?? {}), [field]: v } }));
+    setDirty(true);
+  };
 
   const set = <K extends keyof Post>(field: K, v: Post[K]) => {
     setValue((prev) => ({ ...prev, [field]: v }));
@@ -146,6 +155,12 @@ export function PostForm({
   return (
     <div className="cs-editor">
       <div>
+        <LangTabs lang={lang} onChange={setLang} translated={Boolean(value.en)} />
+
+        {lang === 'en' ? (
+          <PostEn value={value} setEn={setEn} />
+        ) : (
+        <>
         <fieldset className="cs-fieldset">
           <legend>Identitas</legend>
           <Field label="Judul" value={value.title} onChange={(v) => set('title', v)} />
@@ -324,6 +339,8 @@ export function PostForm({
             <Badge tone="neutral">{value.sections?.length ?? 0} bagian</Badge>
           </div>
         </fieldset>
+        </>
+        )}
       </div>
 
       <aside className="cs-aside">
